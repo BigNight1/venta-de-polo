@@ -1,0 +1,90 @@
+/* Estilo general para el contenedor de tours */
+.Section3 {
+  padding: 3rem 0;
+}
+.BoxExplore {
+  display: flex;
+}
+
+/* Contenedor de los tours */
+.box-tour {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Por defecto, 3 columnas */
+  gap: 1rem; /* Espaciado entre los elementos */
+  max-width: 1200px;
+  margin: auto;
+}
+
+/* Estilo para las tarjetas de los tours */
+.BoxPriceTravel {
+  border: 1px solid #bfbdbd;
+  box-shadow: 8px 0px 12px 0px rgba(0, 0, 0, 0.27);
+  transition: 0.3s;
+}
+
+.img-lugares {
+  height: 290px;
+  object-fit: cover;
+  object-position: center center;
+  width: 100%; /* Asegura que la imagen se ajuste al contenedor */
+}
+
+.name h4 {
+  font-size: 20px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  line-height: 1.5em;
+}
+
+.precio {
+  background-color: #36a9e1;
+  color: white;
+  font-weight: 500;
+  padding: 3px;
+  width: 50%;
+}
+
+.precio .desde {
+  text-align: center;
+}
+
+.text-white {
+  color: white;
+}
+
+/* Ajuste para pantallas medianas (1000px o menos) */
+@media (max-width: 1223px) {
+  .box-tour {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 1000px) {
+  .box-tour {
+    grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+  }
+}
+
+/* Ajuste para pantallas pequeñas (768px o menos) */
+@media (max-width: 768px) {
+  .box-tour {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    grid-template-columns: 1fr; /* 1 columna */
+  }
+
+  .BoxExplore {
+    display: flex;
+  }
+  .img-referencia {
+    height: 356px;
+  }
+}
+
+@media (max-width: 576px) {
+  .BoxExplore {
+    display: flex;
+    flex-direction: column;
+  }
+}

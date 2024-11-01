@@ -1,0 +1,157 @@
+.NavBar {
+  background-color: #595959;
+}
+
+.Content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1300px;
+  margin: 0 auto;
+  height: 80px;
+  padding: 0 1rem;
+}
+
+.link ul {
+  display: flex;
+  gap: 1.5rem; /* Espacio entre los links */
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.link a {
+  font-size: 15px;
+  font-weight: 500;
+  color: white;
+  text-transform: uppercase;
+  padding: 15px;
+  transition: color 0.3s ease; /* Transición suave */
+  display: flex;
+  align-items: center;
+}
+
+.link a:hover {
+  color: #f1f1f1; /* Efecto hover */
+}
+
+.boton-viajes {
+  margin-left: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: transform 0.3s ease; /* Suaviza el ícono */
+}
+
+.boton-viajes i {
+  transition: transform 0.3s ease;
+}
+
+.group:hover .boton-viajes i {
+  transform: rotate(180deg); /* Gira el ícono */
+}
+
+.menu-item {
+  border-bottom: 1px solid #c4c4c4;
+  padding: 10px;
+}
+
+.menu-item a {
+  color: white;
+  padding: 10px;
+  display: block;
+}
+
+.menu-item a:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+ul.absolute {
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  transform: translateY(-10px);
+}
+
+.group:hover ul.absolute {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Nueva clase para el menú desplegable con la flecha */
+.box-arrow {
+  position: relative;
+  background-color: #514e4e; /* Color de fondo */
+  padding: 10px;
+  border-radius: 8px; /* Bordes redondeados */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Sombra */
+}
+
+@media (min-width: 768px) {
+  .links_mobile {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  .link ul {
+    flex-direction: column;
+    gap: 0; /* Espacio cero para dispositivos móviles */
+    align-items: center;
+  }
+
+  .links {
+    display: none;
+  }
+
+  .Content {
+    display: flex;
+  }
+
+  .link a {
+    padding: 10px 0;
+    font-size: 14px;
+  }
+
+  .links_mobile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #595959;
+    padding: 10px;
+    width: 100%;
+    position: relative;
+  }
+
+  /* El menú móvil que se muestra al hacer clic */
+  .link_mobile_menu {
+    position: absolute;
+    top: 64px; /* Ajusta según la altura de tu Navbar */
+    left: 0;
+    background-color: #514e4e;
+    width: 100%;
+    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    list-style: none;
+    z-index: 1000;
+  }
+
+  .link_mobile_menu li {
+    padding: 10px 0;
+    width: 100%;
+    text-align: center;
+  }
+
+  .link_mobile_menu a {
+    font-size: 16px;
+    color: white;
+    text-decoration: none;
+  }
+
+  .link_mobile_menu a:hover {
+    color: #f1f1f1;
+  }
+}

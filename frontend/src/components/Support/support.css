@@ -1,0 +1,81 @@
+.contact {
+  display: flex;
+  width: 41%;
+}
+.pay_sure {
+  width: 33%;
+  /* height: 100%; */
+}
+
+.recommend {
+  width: 26%;
+}
+
+.box-pay {
+  display: flex;
+  align-items: center;
+  align-content: center;
+  padding: 10px;
+  position: relative;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+.icon {
+  width: 1em;
+  height: 1em;
+  position: relative;
+  display: block;
+}
+
+@media (max-width: 1140px){
+  .box_support{
+    padding: 0 0.7rem;
+  }
+}
+
+@media (min-width: 900px){
+  .img-logo-contact{
+    width: 40%;
+  }
+  .contact-description{
+    width: 60%;
+
+  }
+}
+
+@media (max-width: 900px){
+  .box_support{
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .contact{
+    align-items: center;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+    padding: 1rem 0;
+  }
+  .pay_sure{
+    width: 55%;
+  }
+  .recommend{
+    width: 45%;
+  }
+  
+}
+
+@media (max-width: 375px){
+  .contact{
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 320px){
+  .box_support{
+    padding: 0;
+  }
+  .contact{
+    gap: 0;
+  }
+}
