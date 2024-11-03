@@ -93,6 +93,9 @@ ul.absolute {
   .links_mobile {
     display: none;
   }
+  .link_mobile_menu{
+    display: none;
+  }
 }
 @media (max-width: 768px) {
   .link ul {
@@ -131,7 +134,6 @@ ul.absolute {
     left: 0;
     background-color: #514e4e;
     width: 100%;
-    padding: 10px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -143,12 +145,20 @@ ul.absolute {
     padding: 10px 0;
     width: 100%;
     text-align: center;
+    display: flex;
+    padding-left: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* Línea separadora */
+
   }
+  .link_mobile_menu li:last-child {
+    border-bottom: none; /* Elimina la línea del último elemento */
+}
 
   .link_mobile_menu a {
     font-size: 16px;
     color: white;
     text-decoration: none;
+    font-weight: 600;
   }
 
   .link_mobile_menu a:hover {

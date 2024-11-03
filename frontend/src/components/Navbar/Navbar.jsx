@@ -90,8 +90,6 @@ export const Navbar = () => {
             <FiAlignJustify className="text-gray-50 text-2xl" />
             <span className="text-gray-50">Menu</span>
           </div>
-          {/* Menú móvil desplegable controlado por menuOpen */}
-          
         </nav>
 
         {/* Bandera de Language */}
@@ -124,25 +122,26 @@ export const Navbar = () => {
             </div>
           )}
         </div>
+        {/* Menú móvil desplegable controlado por menuOpen */}
         {menuOpen && (
-              <ul className="link_mobile_menu">
-              <li>
-                <Link to="/">INICIO</Link>
-              </li>
-              <li>
-                <Link to="/Nosotros">NOSOTROS</Link>
-              </li>
-              <li>
-                <Link to="/Tours-en-Lima">TOURS EN LIMA</Link>
-              </li>
-              <li>
-                <Link to="/Lineas-de-Nazca">LÍNEAS DE NAZCA</Link>
-              </li>
-              <li>
-                <Link to="/Contacto">CONTACTO</Link>
-              </li>
-            </ul>
-          )}
+          <ul className="link_mobile_menu">
+            <li>
+              <Link to="/" onClick={toggleMenu}>INICIO</Link>
+            </li>
+            <li>
+              <Link to="/Nosotros" onClick={toggleMenu}>NOSOTROS</Link>
+            </li>
+            <li>
+              <Link to="/Tours-en-Lima" onClick={toggleMenu}>TOURS EN LIMA</Link>
+            </li>
+            <li>
+              <Link to="/Lineas-de-Nazca" onClick={toggleMenu}>LÍNEAS DE NAZCA</Link>
+            </li>
+            <li>
+              <Link to="/Contacto" onClick={toggleMenu}>CONTACTO</Link>
+            </li>
+          </ul>
+        )}
       </div>
     </div>
   );
