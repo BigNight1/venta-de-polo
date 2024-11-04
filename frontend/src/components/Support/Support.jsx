@@ -81,6 +81,7 @@ const Support = () => {
             </div>
           </div>
         </div>
+        
         {/* Íconos de métodos de pago */}
         <div className="flex items-center w-full min-h-[70px]">
           <div className="methods w-1/2 ">
@@ -99,7 +100,7 @@ const Support = () => {
           </div>
         </div>
         {/* Línea de separación */}
-        <div className="w-1/2 border-t-2 border-black"></div>
+        <div className="w-[85%] border-t-2 border-black"></div>
         {/* íconos de redes sociales*/}
         <div className="flex gap-3 mt-3 text-center">
           <div className="">

@@ -93,52 +93,59 @@ export const Navbar = () => {
         </nav>
 
         {/* Bandera de Language */}
-        <div>
-          {/* Si el idioma actual es español, se muestra el bloque de inglés */}
-          {language === "es" ? (
-            <div
-              className="flex items-center cursor-pointer"
-              onClick={toggleLanguage}
-            >
-              <img
-                src="/image/language-img/English.png"
-                alt="English"
-                className="h-4 pr-2"
-              />
-              <span className="text-white">English</span>
-            </div>
-          ) : (
-            // Si el idioma actual es inglés, se muestra el bloque de español
-            <div
-              className="flex items-center cursor-pointer"
-              onClick={toggleLanguage}
-            >
-              <img
-                src="/image/language-img/spanish.png"
-                alt="Spanish"
-                className="h-4 pr-2"
-              />
-              <span className="text-white">Spañish</span>
-            </div>
-          )}
-        </div>
+        {language === "es" ? (
+          <div
+            className="flex items-center cursor-pointer flag"
+            onClick={toggleLanguage}
+          >
+            <img
+              src="/image/language-img/English.png"
+              alt="English"
+              className="h-4 pr-2"
+            />
+            <span className="text-white">ENG</span>
+          </div>
+        ) : (
+          <div
+            className="flex items-center cursor-pointer flag"
+            onClick={toggleLanguage}
+          >
+            <img
+              src="/image/language-img/spanish.png"
+              alt="Spanish"
+              className="h-4 pr-2"
+            />
+            <span className="text-white">ESP</span>
+          </div>
+        )}
+
         {/* Menú móvil desplegable controlado por menuOpen */}
         {menuOpen && (
           <ul className="link_mobile_menu">
             <li>
-              <Link to="/" onClick={toggleMenu}>INICIO</Link>
+              <Link to="/" onClick={toggleMenu}>
+                INICIO
+              </Link>
             </li>
             <li>
-              <Link to="/Nosotros" onClick={toggleMenu}>NOSOTROS</Link>
+              <Link to="/Nosotros" onClick={toggleMenu}>
+                NOSOTROS
+              </Link>
             </li>
             <li>
-              <Link to="/Tours-en-Lima" onClick={toggleMenu}>TOURS EN LIMA</Link>
+              <Link to="/Tours-en-Lima" onClick={toggleMenu}>
+                TOURS EN LIMA
+              </Link>
             </li>
             <li>
-              <Link to="/Lineas-de-Nazca" onClick={toggleMenu}>LÍNEAS DE NAZCA</Link>
+              <Link to="/Lineas-de-Nazca" onClick={toggleMenu}>
+                LÍNEAS DE NAZCA
+              </Link>
             </li>
             <li>
-              <Link to="/Contacto" onClick={toggleMenu}>CONTACTO</Link>
+              <Link to="/Contacto" onClick={toggleMenu}>
+                CONTACTO
+              </Link>
             </li>
           </ul>
         )}
