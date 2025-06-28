@@ -1,29 +1,54 @@
-import { Route, Routes } from "react-router-dom"
-import { Home } from "./components/Home/Home.jsx"
-import { Navbar } from "./components/Navbar/Navbar.jsx"
-import Nosotros from "./components/Nosotros/Nosotros.jsx"
-import TourLima from "./components/Tours/TourLima.jsx"
-import "./App.css"
-import Login from "./components/Login/Login"
-import { WhatsAppWidget } from "react-whatsapp-widget"
-import 'react-whatsapp-widget/dist/index.css';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import { CartProvider } from './context/CartContext';
+import { ProductProvider } from './context/ProductContext';
+import { AuthProvider } from './context/AuthContext';
+import { ApiProvider } from './context/ApiContext';
+import ProtectedRoute from './components/Auth/ProtectedRoute';
+import Login from './components/Auth/Login/Login';
+import AdminDashboard from './components/Admin/AdminDashboard';
+import MainLayout from './components/Layout/MainLayout';
+import DetalleProducto from './components/Products/DetalleProducto';
+import Catalogo from './components/Products/Catalogo';
+import './styles/index.css';
+
 function App() {
   return (
-    <div className="App">
-      <Navbar/>
-
-      
-      {/* Routes  */}
-        <Routes>
-          <Route path="/" element={<Home/>}/>
-          <Route path="/Nosotros" element={<Nosotros/>}/>
-          <Route path="/Tours-en-Lima" element={<TourLima/>}/>
-          <Route path="/login" element={<Login/>}/>
-          <Route path="*" element={<h1>No existe la pagina</h1>}/>
-        </Routes>
-        <WhatsAppWidget />
-    </div>
-  )
+    <ApiProvider>
+      <AuthProvider>
+        <ProductProvider>
+          <CartProvider>
+            <Routes>
+              {/* Rutas públicas */}
+              <Route path="/login" element={<Login />} />
+              
+              {/* Rutas protegidas del admin */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              {/* Rutas públicas del e-commerce */}
+              <Route path="/" element={
+                <MainLayout>
+                  <Catalogo />
+                </MainLayout>
+              } />
+              <Route path="/producto/:id" element={
+                <MainLayout>
+                  <DetalleProducto />
+                </MainLayout>
+              } />
+            </Routes>
+          </CartProvider>
+        </ProductProvider>
+      </AuthProvider>
+    </ApiProvider>
+  );
 }
 
-export default App
+export default App;
