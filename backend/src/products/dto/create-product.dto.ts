@@ -1,50 +1,64 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean, ValidateNested, IsDefined } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class SizeDto {
+  @IsString()
+  id: string;
+  @IsString()
+  name: string;
+  @IsNumber()
+  stock: number;
+}
+
+class ColorDto {
+  @IsString()
+  id: string;
+  @IsString()
+  name: string;
+  @IsString()
+  hex: string;
+  @IsNumber()
+  stock: number;
+}
 
 export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
-  nombre: string;
+  name: string;
 
   @IsString()
   @IsNotEmpty()
-  descripcion: string;
+  description: string;
 
   @IsNumber()
-  precio: number;
-
-  @IsNumber()
-  @IsOptional()
-  precioAnterior?: number;
-
-  @IsNumber()
-  @IsOptional()
-  descuento?: number;
-
-  @IsString()
-  @IsNotEmpty()
-  categoria: string;
-
-  @IsString()
-  @IsNotEmpty()
-  tipo: string;
+  price: number;
 
   @IsArray()
   @IsString({ each: true })
-  tallas: string[];
+  images: string[];
 
   @IsString()
   @IsNotEmpty()
-  imagen: string;
+  category: string;
 
-  @IsNumber()
-  @IsOptional()
-  stock?: number;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SizeDto)
+  sizes: SizeDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ColorDto)
+  colors: ColorDto[];
+
+  @IsBoolean()
+  inStock: boolean;
 
   @IsBoolean()
   @IsOptional()
-  destacado?: boolean;
+  featured?: boolean;
 
-  @IsBoolean()
+  @IsString()
   @IsOptional()
-  activo?: boolean;
+  createdAt?: string;
 } 

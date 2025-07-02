@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
-import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -60,7 +59,7 @@ export class UsersService {
   async createAdminUser(): Promise<User> {
     const adminData = {
       username: 'admin',
-      password: 'admin',
+      password: "admin",
       email: 'admin@polos.com',
       role: 'admin',
       firstName: 'Administrador',

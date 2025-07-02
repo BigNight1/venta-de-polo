@@ -1,45 +1,73 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export type ProductDocument = Product & Document;
+
+@Schema()
+export class Size {
+  @Prop({ required: true })
+  id: string;
+  @Prop({ required: true })
+  name: string;
+  @Prop({ required: true })
+  stock: number;
+}
+
+@Schema()
+export class Color {
+  @Prop({ required: true })
+  id: string;
+  @Prop({ required: true })
+  name: string;
+  @Prop({ required: true })
+  hex: string;
+  @Prop({ required: true })
+  stock: number;
+}
 
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true })
-  nombre: string;
+  name: string;
 
   @Prop({ required: true })
-  descripcion: string;
+  description: string;
 
   @Prop({ required: true })
-  precio: number;
-
-  @Prop()
-  precioAnterior?: number;
-
-  @Prop()
-  descuento?: number;
-
-  @Prop({ required: true })
-  categoria: string; // Hombre, Mujer, Infantil, Unisex
-
-  @Prop({ required: true })
-  tipo: string; // Polo, Camisa, Polera, etc.
+  price: number;
 
   @Prop({ type: [String], required: true })
-  tallas: string[];
+  images: string[];
 
   @Prop({ required: true })
-  imagen: string; // url o path
+  category: string;
 
-  @Prop()
-  stock?: number;
+  @Prop({ type: [MongooseSchema.Types.Mixed], required: true })
+  sizes: Size[];
+
+  @Prop({ type: [MongooseSchema.Types.Mixed], required: true })
+  colors: Color[];
+
+  @Prop({ required: true })
+  inStock: boolean;
 
   @Prop({ default: false })
-  destacado?: boolean;
+  featured: boolean;
 
-  @Prop({ default: true })
-  activo?: boolean;
+  @Prop()
+  createdAt?: string;
 }
 
-export const ProductSchema = SchemaFactory.createForClass(Product); 
+export const SizeSchema = SchemaFactory.createForClass(Size);
+export const ColorSchema = SchemaFactory.createForClass(Color);
+export const ProductSchema = SchemaFactory.createForClass(Product);
+
+// Transformar _id a id cuando se serializa a JSON
+ProductSchema.set('toJSON', {
+  transform: function(doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+}); 

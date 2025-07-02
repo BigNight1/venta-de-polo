@@ -22,8 +22,8 @@ export class UploadService {
       const usedImages = new Set<string>();
       
       products.forEach(product => {
-        if (product.imagen && product.imagen.startsWith('/uploads/')) {
-          usedImages.add(path.basename(product.imagen));
+        if (product.images && product.images[0] && product.images[0].startsWith('/uploads/')) {
+          usedImages.add(path.basename(product.images[0]));
         }
       });
 
@@ -73,8 +73,8 @@ export class UploadService {
       const usedImages = new Set<string>();
       
       products.forEach(product => {
-        if (product.imagen && product.imagen.startsWith('/uploads/')) {
-          usedImages.add(path.basename(product.imagen));
+        if (product.images && product.images[0] && product.images[0].startsWith('/uploads/')) {
+          usedImages.add(path.basename(product.images[0]));
         }
       });
 
