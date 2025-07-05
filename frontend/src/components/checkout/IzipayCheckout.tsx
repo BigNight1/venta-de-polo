@@ -52,14 +52,54 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
     setIsLoading(true);
     setError('');
 
+    // LOGS PARA DEBUGGING - Verificar datos recibidos
+    console.log('[FRONTEND] IzipayCheckout - Datos recibidos:');
+    console.log('[FRONTEND] formToken:', formToken);
+    console.log('[FRONTEND] publicKey:', publicKey);
+    console.log('[FRONTEND] config:', config);
+    console.log('[FRONTEND] URL actual:', window.location.href);
+    console.log('[FRONTEND] Dominio:', window.location.origin);
+
+    // Validar que el token no esté vacío
+    if (!formToken || formToken === '') {
+      const errorMsg = 'Error: formToken está vacío o no definido';
+      console.error('[FRONTEND]', errorMsg);
+      setError(errorMsg);
+      setIsLoading(false);
+      onPaymentError(errorMsg);
+      return;
+    }
+
+    // Validar que el token no sea el fake token
+    if (formToken.includes('FAKE_TOKEN')) {
+      const errorMsg = 'Error: Se recibió un token fake del backend';
+      console.error('[FRONTEND]', errorMsg);
+      setError(errorMsg);
+      setIsLoading(false);
+      onPaymentError(errorMsg);
+      return;
+    }
+
     // 1. Cargar el script
     loadIzipayScript()
       .then(() => {
-        // 2. Pedir token y clave pública al backend
-        if (!window.Izipay) throw new Error('SDK de Izipay no disponible');
+        console.log('[FRONTEND] Script de Izipay cargado exitosamente');
+        
+        // 2. Verificar que el SDK esté disponible
+        if (!window.Izipay) {
+          throw new Error('SDK de Izipay no disponible después de cargar el script');
+        }
+        
+        console.log('[FRONTEND] SDK de Izipay disponible:', !!window.Izipay);
+        
         // 3. Instanciar el widget con orderId y environment por separado
+        console.log('[FRONTEND] Inicializando widget con config:', config);
         checkoutInstance = new window.Izipay({ config });
+        
         // 4. Mostrar el formulario
+        console.log('[FRONTEND] Cargando formulario con token:', formToken);
+        console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
+        
         checkoutInstance.LoadForm({
           authorization: formToken,
           keyRSA: publicKey,
@@ -70,6 +110,7 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
               onPaymentSuccess(response);
             } else {
               const errorMsg = response.errorMessage || 'Pago rechazado o cancelado';
+              console.error('[FRONTEND] Error en pago:', errorMsg);
               setError(errorMsg);
               onPaymentError(errorMsg);
             }

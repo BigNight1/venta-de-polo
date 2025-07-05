@@ -103,21 +103,35 @@ export const CheckoutPage: React.FC = () => {
         amount: total,
         currency: 'PEN',
       };
+      // LOGS PARA DEBUGGING - Verificar datos enviados al backend
+      console.log('[FRONTEND] CheckoutPage - Datos enviados al backend:');
+      console.log('[FRONTEND] URL del backend:', `${import.meta.env.VITE_API_URL}/payments/izipay/session`);
+      console.log('[FRONTEND] Body enviado:', body);
+      
       fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/session`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
-        .then(res => res.json())
+        .then(res => {
+          console.log('[FRONTEND] Respuesta del backend - Status:', res.status);
+          return res.json();
+        })
         .then(data => {
+          console.log('[FRONTEND] Respuesta del backend - Data:', data);
           if (data.token && data.keyRSA && data.config) {
+            console.log('[FRONTEND] Token recibido del backend:', data.token);
+            console.log('[FRONTEND] KeyRSA recibida del backend:', data.keyRSA);
+            console.log('[FRONTEND] Config recibida del backend:', data.config);
             setIzipayToken({ formToken: data.token, publicKey: data.keyRSA, config: data.config });
           } else {
+            console.error('[FRONTEND] Error: Datos incompletos del backend:', data);
             setIzipayToken(null);
             setIzipayError('No se pudo obtener la pasarela de pago.');
           }
         })
-        .catch(() => {
+        .catch((error) => {
+          console.error('[FRONTEND] Error al obtener token del backend:', error);
           setIzipayToken(null);
           setIzipayError('No se pudo obtener la pasarela de pago.');
         });
