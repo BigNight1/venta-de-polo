@@ -199,11 +199,28 @@ export class IzipayService {
   }
 
   /**
-   * Devuelve la configuración de sesión para el widget de Izipay usando datos reales
+   * Devuelve la configuración de sesión para el widget de Izipay usando datos reales y el formToken real
    */
-  getSessionConfig(orderId: string, orderData: any) {
-    const token = 'FAKE_TOKEN_' + orderId;
-    const keyRSA = this.publicKey || 'FAKE_RSA_KEY';
+  async getSessionConfig(orderId: string, orderData: any) {
+    // Llama a createFormToken para obtener el formToken real
+    const paymentData = {
+      orderId,
+      amount: orderData?.amount || 1,
+      currency: orderData?.currency || 'PEN',
+      firstName: orderData?.firstName || '',
+      lastName: orderData?.lastName || '',
+      email: orderData?.email || '',
+      phoneNumber: orderData?.phoneNumber || '',
+      identityType: orderData?.identityType || 'DNI',
+      identityCode: orderData?.identityCode || '',
+      address: orderData?.address || '',
+      country: orderData?.country || 'PE',
+      state: orderData?.state || '',
+      city: orderData?.city || '',
+      zipCode: orderData?.zipCode || '',
+      items: orderData?.items || [],
+    };
+    const { formToken, publicKey } = await this.createFormToken(paymentData);
     const merchantCode = this.merchantId || 'DEMO_MERCHANT';
     const now = new Date();
     const dateTimeTransaction = now.getTime().toString();
@@ -233,6 +250,6 @@ export class IzipayService {
         document: orderData?.identityCode || '',
       }
     };
-    return { token, keyRSA, config };
+    return { token: formToken, keyRSA: publicKey, config };
   }
 } 

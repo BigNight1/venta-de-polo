@@ -30,7 +30,7 @@ export class PaymentsController {
   async getIzipaySession(@Body() body: any) {
     const { orderId, ...orderData } = body;
     const finalOrderId = orderId || this.izipayService.generateOrderId();
-    const session = this.izipayService.getSessionConfig(finalOrderId, orderData);
+    const session = await this.izipayService.getSessionConfig(finalOrderId, orderData);
     return session;
   }
 } 
