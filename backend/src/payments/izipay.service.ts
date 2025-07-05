@@ -59,6 +59,7 @@ export class IzipayService {
   }
 
   async createFormToken(paymentData: IzipayPaymentData): Promise<IzipayFormTokenResponse> {
+    console.log('[IZIPAY] createFormToken - paymentData:', paymentData);
     // Forzar country a 'PE' y currency a 'PEN'
     const countryCode = 'PE';
     const currency = paymentData.currency && paymentData.currency.trim() ? paymentData.currency : 'PEN';
@@ -116,7 +117,7 @@ export class IzipayService {
     });
 
     const data = await response.json();
-    
+    console.log('[IZIPAY] createFormToken - respuesta de Izipay:', data);
     if (data.status !== 'SUCCESS') {
       throw new Error(`Izipay error: ${data.answer?.errorMessage || JSON.stringify(data) || 'Unknown error'}`);
     }
@@ -126,6 +127,7 @@ export class IzipayService {
       this.orderItemsMap.set(paymentData.orderId, paymentData.items);
     }
 
+    console.log('[IZIPAY] createFormToken - formToken recibido:', data.answer.formToken);
     return {
       formToken: data.answer.formToken,
       publicKey: this.publicKey, // para el frontend
@@ -202,6 +204,7 @@ export class IzipayService {
    * Devuelve la configuración de sesión para el widget de Izipay usando datos reales y el formToken real
    */
   async getSessionConfig(orderId: string, orderData: any) {
+    console.log('[IZIPAY] getSessionConfig - orderId:', orderId, 'orderData:', orderData);
     // Llama a createFormToken para obtener el formToken real
     const paymentData = {
       orderId,
@@ -221,6 +224,7 @@ export class IzipayService {
       items: orderData?.items || [],
     };
     const { formToken, publicKey } = await this.createFormToken(paymentData);
+    console.log('[IZIPAY] getSessionConfig - formToken:', formToken);
     const merchantCode = this.merchantId || 'DEMO_MERCHANT';
     const now = new Date();
     const dateTimeTransaction = now.getTime().toString();
