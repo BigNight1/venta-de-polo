@@ -42,23 +42,14 @@ export class ProductsController {
     const exampleProducts: CreateProductDto[] = [
       {
         name: 'Polo Clásico Algodón',
-        description: 'Polo de alta calidad en algodón 100% con corte clásico. Perfecto para uso diario con máximo confort.',
-        price: 29.99,
-        images: [
-          'https://images.pexels.com/photos/5668858/pexels-photo-5668858.jpeg',
-          'https://images.pexels.com/photos/8532616/pexels-photo-8532616.jpeg',
-        ],
+        description: 'Polo de algodón suave y cómodo',
+        price: 45,
+        images: ['url1'],
         category: 'hombre',
-        sizes: [
-          { id: 's', name: 'S', stock: 10 },
-          { id: 'm', name: 'M', stock: 15 },
-          { id: 'l', name: 'L', stock: 12 },
-          { id: 'xl', name: 'XL', stock: 8 },
-        ],
-        colors: [
-          { id: 'white', name: 'Blanco', hex: '#FFFFFF', stock: 20 },
-          { id: 'black', name: 'Negro', hex: '#000000', stock: 18 },
-          { id: 'navy', name: 'Azul Marino', hex: '#1E3A8A', stock: 15 },
+        variants: [
+          { size: 'S', color: 'Azul', stock: 5 },
+          { size: 'M', color: 'Azul', stock: 3 },
+          { size: 'L', color: 'Rojo', stock: 2 },
         ],
         inStock: true,
         featured: true,
@@ -68,21 +59,12 @@ export class ProductsController {
         name: 'Polo Deportivo Dri-Fit',
         description: 'Polo deportivo con tecnología que absorbe la humedad. Ideal para actividades físicas y deportes.',
         price: 39.99,
-        images: [
-          'https://images.pexels.com/photos/5668772/pexels-photo-5668772.jpeg',
-          'https://images.pexels.com/photos/8532609/pexels-photo-8532609.jpeg',
-        ],
+        images: ['https://images.pexels.com/photos/5668772/pexels-photo-5668772.jpeg'],
         category: 'hombre',
-        sizes: [
-          { id: 's', name: 'S', stock: 8 },
-          { id: 'm', name: 'M', stock: 12 },
-          { id: 'l', name: 'L', stock: 10 },
-          { id: 'xl', name: 'XL', stock: 6 },
-        ],
-        colors: [
-          { id: 'red', name: 'Rojo', hex: '#DC2626', stock: 12 },
-          { id: 'blue', name: 'Azul', hex: '#2563EB', stock: 14 },
-          { id: 'green', name: 'Verde', hex: '#16A34A', stock: 10 },
+        variants: [
+          { size: 'S', color: 'Rojo', stock: 8 },
+          { size: 'M', color: 'Azul', stock: 12 },
+          { size: 'L', color: 'Verde', stock: 10 },
         ],
         inStock: true,
         featured: false,

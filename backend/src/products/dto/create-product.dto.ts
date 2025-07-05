@@ -1,25 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean, ValidateNested, IsDefined } from 'class-validator';
-import { Type } from 'class-transformer';
-
-class SizeDto {
-  @IsString()
-  id: string;
-  @IsString()
-  name: string;
-  @IsNumber()
-  stock: number;
-}
-
-class ColorDto {
-  @IsString()
-  id: string;
-  @IsString()
-  name: string;
-  @IsString()
-  hex: string;
-  @IsNumber()
-  stock: number;
-}
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -35,6 +14,7 @@ export class CreateProductDto {
 
   @IsArray()
   @IsString({ each: true })
+  @IsNotEmpty({ each: true })
   images: string[];
 
   @IsString()
@@ -42,14 +22,7 @@ export class CreateProductDto {
   category: string;
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => SizeDto)
-  sizes: SizeDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ColorDto)
-  colors: ColorDto[];
+  variants: { size: string; color: string; stock: number }[];
 
   @IsBoolean()
   inStock: boolean;

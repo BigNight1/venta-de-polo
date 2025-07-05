@@ -19,40 +19,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const sizes = [
-    { id: 'xs', label: 'XS' },
-    { id: 's', label: 'S' },
-    { id: 'm', label: 'M' },
-    { id: 'l', label: 'L' },
-    { id: 'xl', label: 'XL' },
+    { id: 'XS', label: 'XS' },
+    { id: 'S', label: 'S' },
+    { id: 'M', label: 'M' },
+    { id: 'L', label: 'L' },
+    { id: 'XL', label: 'XL' },
   ];
 
   const colors = [
-    { id: 'white', label: 'Blanco', hex: '#FFFFFF' },
-    { id: 'black', label: 'Negro', hex: '#000000' },
-    { id: 'red', label: 'Rojo', hex: '#DC2626' },
-    { id: 'blue', label: 'Azul', hex: '#2563EB' },
-    { id: 'green', label: 'Verde', hex: '#16A34A' },
-    { id: 'pink', label: 'Rosa', hex: '#EC4899' },
-    { id: 'yellow', label: 'Amarillo', hex: '#EAB308' },
-    { id: 'purple', label: 'Morado', hex: '#9333EA' },
+    { id: 'Blanco', label: 'Blanco', hex: '#FFFFFF' },
+    { id: 'Negro', label: 'Negro', hex: '#000000' },
+    { id: 'Rojo', label: 'Rojo', hex: '#DC2626' },
+    { id: 'Azul', label: 'Azul', hex: '#2563EB' },
+    { id: 'Verde', label: 'Verde', hex: '#16A34A' },
+    { id: 'Rosa', label: 'Rosa', hex: '#EC4899' },
+    { id: 'Amarillo', label: 'Amarillo', hex: '#EAB308' },
+    { id: 'Morado', label: 'Morado', hex: '#9333EA' },
   ];
 
   const handleCategoryChange = (categoryId: string) => {
     setFilters({ category: categoryId });
   };
 
-  const handleSizeToggle = (sizeId: string) => {
-    const newSizes = filters.sizes.includes(sizeId)
-      ? filters.sizes.filter(id => id !== sizeId)
-      : [...filters.sizes, sizeId];
-    setFilters({ sizes: newSizes });
+  const handleSizeChange = (sizeId: string) => {
+    setFilters({ size: filters.size === sizeId ? '' : sizeId });
   };
 
-  const handleColorToggle = (colorId: string) => {
-    const newColors = filters.colors.includes(colorId)
-      ? filters.colors.filter(id => id !== colorId)
-      : [...filters.colors, colorId];
-    setFilters({ colors: newColors });
+  const handleColorChange = (colorId: string) => {
+    console.log('Color seleccionado:', colorId);
+    setFilters({ color: filters.color === colorId ? '' : colorId });
   };
 
   const handlePriceChange = (min: number, max: number) => {
@@ -163,10 +158,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               {sizes.map((size) => (
                 <button
                   key={size.id}
-                  onClick={() => handleSizeToggle(size.id)}
+                  onClick={() => handleSizeChange(size.id)}
                   className={`
                     px-3 py-2 text-sm font-medium rounded-md border transition-colors duration-200
-                    ${filters.sizes.includes(size.id)
+                    ${filters.size === size.id
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-white text-gray-700 border-gray-300 hover:border-blue-300'
                     }
@@ -185,10 +180,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               {colors.map((color) => (
                 <button
                   key={color.id}
-                  onClick={() => handleColorToggle(color.id)}
+                  onClick={() => handleColorChange(color.id)}
                   className={`
                     relative w-8 h-8 rounded-full border-2 transition-all duration-200
-                    ${filters.colors.includes(color.id)
+                    ${filters.color === color.id
                       ? 'border-blue-600 ring-2 ring-blue-200'
                       : 'border-gray-300 hover:border-gray-400'
                     }
@@ -196,25 +191,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   style={{ backgroundColor: color.hex }}
                   title={color.label}
                 >
-                  {filters.colors.includes(color.id) && (
+                  {filters.color === color.id && (
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
                     </div>
                   )}
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Mobile Reset Button */}
-          <div className="lg:hidden">
-            <Button
-              variant="outline"
-              onClick={resetFilters}
-              className="w-full"
-            >
-              Limpiar Filtros
-            </Button>
           </div>
         </div>
       </div>

@@ -25,14 +25,17 @@ export const ProductGrid: React.FC = () => {
       }
 
       // Size filter
-      if (filters.sizes.length > 0) {
-        const hasSize = product.sizes.some(size => filters.sizes.includes(size.id));
+      if (filters.size) {
+        const hasSize = product.variants.some(variant => variant.size === filters.size);
         if (!hasSize) return false;
       }
 
       // Color filter
-      if (filters.colors.length > 0) {
-        const hasColor = product.colors.some(color => filters.colors.includes(color.id));
+      if (filters.color) {
+        const selectedColor = filters.color.trim().toLowerCase();
+        const hasColor = product.variants.some(variant =>
+          (variant.color || '').trim().toLowerCase() === selectedColor
+        );
         if (!hasColor) return false;
       }
 
@@ -105,7 +108,7 @@ export const ProductGrid: React.FC = () => {
             </div>
 
             {/* Active Filters */}
-            {(filters.category || filters.sizes.length > 0 || filters.colors.length > 0 || filters.search) && (
+            {(filters.category || filters.size || filters.color || filters.search) && (
               <div className="mt-4 flex flex-wrap gap-2">
                 {filters.category && (
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
@@ -117,16 +120,16 @@ export const ProductGrid: React.FC = () => {
                     "{filters.search}"
                   </span>
                 )}
-                {filters.sizes.map(sizeId => (
-                  <span key={sizeId} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
-                    Talla {sizeId}
+                {filters.size && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-800">
+                    Talla {filters.size}
                   </span>
-                ))}
-                {filters.colors.map(colorId => (
-                  <span key={colorId} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-800">
-                    {colorId}
+                )}
+                {filters.color && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-800">
+                    {filters.color}
                   </span>
-                ))}
+                )}
               </div>
             )}
           </div>

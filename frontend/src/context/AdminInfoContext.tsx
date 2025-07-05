@@ -4,8 +4,6 @@ import type {
   AdminInfoContextType, 
   AdminAnalytics, 
   CategoryCount,
-  Size,
-  Color 
 } from '../types/typeInfo';
 import { useAdminAuth } from './AdminAuthContext';
 
@@ -41,8 +39,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
     price: 0,
     images: [],
     category: 'hombre',
-    sizes: [],
-    colors: [],
+    variants: [],
     inStock: true,
     featured: false,
   });
@@ -60,7 +57,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
       
       // Filtrar productos duplicados y asegurar IDs únicos
       const uniqueProducts = data.filter((product: Product, index: number, self: Product[]) => 
-        index === self.findIndex(p => p.id === product.id)
+        index === self.findIndex(p => p._id === product._id)
       );
       
       setProducts(uniqueProducts);
@@ -110,7 +107,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
       });
       const data = await res.json();
       if (!res.ok) throw new Error((data as any).message || 'Error al actualizar producto');
-      setProducts(prev => prev.map(p => p.id === productId ? data : p));
+      setProducts(prev => prev.map(p => p._id === productId ? data : p));
     } catch (err: any) {
       setError(err.message || 'Error desconocido');
       throw err;
@@ -129,7 +126,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Error al eliminar producto');
-      setProducts(prev => prev.filter(p => p.id !== productId));
+      setProducts(prev => prev.filter(p => p._id !== productId));
     } catch (err: any) {
       setError(err.message || 'Error desconocido');
       throw err;
@@ -159,8 +156,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
       price: 0,
       images: [],
       category: 'hombre',
-      sizes: [],
-      colors: [],
+      variants: [],
       inStock: true,
       featured: false,
     });
@@ -171,81 +167,6 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
 
   const updateFormData = (data: Partial<Product>) => {
     setFormData(prev => ({ ...prev, ...data }));
-  };
-
-  // Funciones auxiliares del formulario
-  const addSize = () => {
-    const newSize: Size = {
-      id: `size-${Date.now()}`,
-      name: '',
-      stock: 0
-    };
-    setFormData(prev => ({
-      ...prev,
-      sizes: [...(prev.sizes || []), newSize]
-    }));
-  };
-
-  const updateSize = (index: number, field: keyof Size, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      sizes: prev.sizes?.map((size, i) => 
-        i === index ? { ...size, [field]: value } : size
-      ) || []
-    }));
-  };
-
-  const removeSize = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      sizes: prev.sizes?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  const addColor = () => {
-    const newColor: Color = {
-      id: `color-${Date.now()}`,
-      name: '',
-      hex: '#000000',
-      stock: 0
-    };
-    setFormData(prev => ({
-      ...prev,
-      colors: [...(prev.colors || []), newColor]
-    }));
-  };
-
-  const updateColor = (index: number, field: keyof Color, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors?.map((color, i) => 
-        i === index ? { ...color, [field]: value } : color
-      ) || []
-    }));
-  };
-
-  const removeColor = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors?.filter((_, i) => i !== index) || []
-    }));
-  };
-
-  const addImage = () => {
-    const url = prompt('Ingresa la URL de la imagen:');
-    if (url) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...(prev.images || []), url]
-      }));
-    }
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images?.filter((_, i) => i !== index) || []
-    }));
   };
 
   // Analytics
@@ -289,14 +210,6 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
     handleCreate,
     resetForm,
     updateFormData,
-    addSize,
-    updateSize,
-    removeSize,
-    addColor,
-    updateColor,
-    removeColor,
-    addImage,
-    removeImage,
   };
 
   return (

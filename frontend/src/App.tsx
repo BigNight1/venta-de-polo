@@ -12,6 +12,7 @@ import { AdminRoute } from './components/admin/AdminRoute';
 import { useStore } from './store/useStore';
 import { CheckoutPage } from './components/checkout/CheckoutPage';
 import { AdminInfoProvider } from './context/AdminInfoContext';
+import { OrderConfirmation } from './components/checkout/OrderConfirmation';
 
 function AppContent() {
   const { selectedProduct } = useStore();
@@ -29,8 +30,9 @@ function AppContent() {
           <Route path="/" element={<ProductGrid />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/orders" element={<MyOrders />} />
+          <Route path="/order" element={<MyOrders />} />
           <Route path="/checkout" element={<CheckoutPage />} />
+          <Route path="/order/:orderId" element={<OrderConfirmation />} />
           <Route path="/admin/*" element={<AdminRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

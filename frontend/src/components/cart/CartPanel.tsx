@@ -72,15 +72,13 @@ export const CartPanel: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {cartItems.map((item) => {
-                    const size = item.product.sizes.find(s => s.id === item.sizeId);
-                    const color = item.product.colors.find(c => c.id === item.colorId);
-                    
+                    const variant = item.product.variants.find(v => v.size.toUpperCase() === item.size.toUpperCase() && v.color.toUpperCase() === item.color.toUpperCase());
                     return (
-                      <div key={item.id} className="flex items-center space-x-3 py-3 border-b border-gray-100 last:border-b-0">
+                      <div key={item.product._id + '-' + item.size + '-' + item.color} className="flex items-center space-x-3 py-3 border-b border-gray-100 last:border-b-0">
                         {/* Product Image */}
                         <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                           <img
-                            src={getImageUrl(item.product.images[0])}
+                            src={getImageUrl(item.product.images[0] || '')}
                             alt={item.product.name}
                             className="w-full h-full object-cover"
                           />
@@ -92,28 +90,39 @@ export const CartPanel: React.FC = () => {
                             {item.product.name}
                           </h4>
                           <div className="text-xs text-gray-500 mt-1">
-                            <span>Talla: {size?.name}</span>
+                            <span>Talla: {item.size}</span>
                             <span className="mx-2">•</span>
-                            <span>Color: {color?.name}</span>
+                            <span>Color: {item.color}</span>
                           </div>
                           <div className="flex items-center justify-between mt-2">
                             <span className="text-sm font-medium text-gray-900">
-                              {formatPrice(item.unitPrice)}
+                              {formatPrice(item.product.price)}
                             </span>
                             
                             {/* Quantity Controls */}
                             <div className="flex items-center space-x-2">
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                onClick={() => updateQuantity(item.product._id, item.size, item.color, item.quantity - 1)}
+                                disabled={item.quantity <= 1}
                                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                               >
                                 <Minus className="h-3 w-3" />
                               </button>
-                              <span className="text-sm font-medium w-8 text-center">
-                                {item.quantity}
-                              </span>
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                min={1}
+                                max={variant?.stock || 1}
+                                onChange={e => {
+                                  const val = Math.max(1, Math.min(Number(e.target.value), variant?.stock || 1));
+                                  updateQuantity(item.product._id, item.size, item.color, val);
+                                }}
+                                className="w-10 text-center border rounded"
+                                disabled={!variant || variant.stock === 0}
+                              />
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                onClick={() => updateQuantity(item.product._id, item.size, item.color, item.quantity + 1)}
+                                disabled={item.quantity >= (variant?.stock || 1)}
                                 className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                               >
                                 <Plus className="h-3 w-3" />
@@ -124,7 +133,7 @@ export const CartPanel: React.FC = () => {
 
                         {/* Remove Button */}
                         <button
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item.product._id, item.size, item.color)}
                           className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -148,13 +157,13 @@ export const CartPanel: React.FC = () => {
                 {/* Shipping */}
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <span>Envío</span>
-                  <span>{getCartTotal() > 50 ? 'Gratis' : formatPrice(4.99)}</span>
+                  <span>{getCartTotal() > 50 ? 'Gratis' : formatPrice(10)}</span>
                 </div>
 
                 {/* Total */}
                 <div className="flex items-center justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200">
                   <span>Total</span>
-                  <span>{formatPrice(getCartTotal() + (getCartTotal() > 50 ? 0 : 4.99))}</span>
+                  <span>{formatPrice(getCartTotal() + (getCartTotal() > 50 ? 0 : 10))}</span>
                 </div>
 
                 {/* Actions */}

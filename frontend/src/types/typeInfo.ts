@@ -27,16 +27,6 @@ export interface AdminInfoContextType {
   handleCreate: () => void;
   resetForm: () => void;
   updateFormData: (data: Partial<Product>) => void;
-  
-  // Funciones auxiliares del formulario
-  addSize: () => void;
-  updateSize: (index: number, field: keyof Size, value: string | number) => void;
-  removeSize: (index: number) => void;
-  addColor: () => void;
-  updateColor: (index: number, field: keyof Color, value: string | number) => void;
-  removeColor: (index: number) => void;
-  addImage: () => void;
-  removeImage: (index: number) => void;
 }
 
 // Interface para analytics del admin
@@ -63,25 +53,10 @@ export interface ProductFormData {
   price: number;
   images: string[];
   category: 'hombre' | 'mujer' | 'ninos';
-  sizes: Size[];
-  colors: Color[];
+  variants: { size: string; color: string; stock: number }[];
   inStock: boolean;
   featured: boolean;
   createdAt?: string;
-}
-
-// Interfaces para sub-componentes (re-exportadas desde index.ts para consistencia)
-export interface Size {
-  id: string;
-  name: string;
-  stock: number;
-}
-
-export interface Color {
-  id: string;
-  name: string;
-  hex: string;
-  stock: number;
 }
 
 // Interface para respuestas de API del admin

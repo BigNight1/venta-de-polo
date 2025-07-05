@@ -1,5 +1,6 @@
 import React from 'react';
 import { Mail, Phone, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -65,9 +66,7 @@ export const Footer: React.FC = () => {
             <h4 className="text-lg font-semibold mb-4">Atención al Cliente</h4>
             <ul className="space-y-2">
               <li>
-                <a href="#" className="text-gray-300 hover:text-white transition-colors">
-                  Mis Pedidos
-                </a>
+                <Link className="text-gray-300 hover:text-white transition-colors" to="/order">Mis Pedidos</Link>
               </li>
               <li>
                 <a href="#" className="text-gray-300 hover:text-white transition-colors">
@@ -102,11 +101,11 @@ export const Footer: React.FC = () => {
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-gray-400" />
-                <span className="text-gray-300">+34 900 123 456</span>
+                <span className="text-gray-300">+51 999 999 999</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-gray-400" />
-                <span className="text-gray-300">Madrid, España</span>
+                <span className="text-gray-300">Lima, Perú</span>
               </div>
             </div>
 

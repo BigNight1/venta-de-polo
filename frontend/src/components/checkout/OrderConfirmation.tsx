@@ -1,22 +1,37 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle, Package, Truck, Mail, Phone, Download, ArrowRight, Calendar, MapPin, CreditCard, Share2 } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { formatPrice, formatDate } from '../../lib/utils';
 import { Button } from '../ui/Button';
+import { getImageUrl } from '../../lib/getImageUrl';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 
-interface OrderConfirmationProps {
-    orderData: {
-        orderNumber: string;
-        items: any[];
-        total: number;
-        shippingInfo: any;
-        paymentMethod: string;
-        estimatedDelivery: string;
-    };
-}
-
-export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData }) => {
+export const OrderConfirmation: React.FC = () => {
+    const { orderId } = useParams();
+    const [orderData, setOrderData] = useState<any | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const { setShowCheckout, setCartOpen } = useStore();
+
+    useEffect(() => {
+        if (!orderId) return;
+        setLoading(true);
+        axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`)
+            .then(res => {
+                setOrderData(res.data);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.log(err);
+                setError('No se pudo cargar el pedido.');
+                setLoading(false);
+            });
+    }, [orderId]);
+
+    if (loading) return <div className="p-8 text-center">Cargando pedido...</div>;
+    if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
+    if (!orderData) return null;
 
     const handleBackToCart = () => {
         setShowCheckout(false);
@@ -43,11 +58,13 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
     };
 
     const trackingSteps = [
-        { id: 1, title: 'Pedido Confirmado', status: 'completed', date: new Date().toISOString() },
-        { id: 2, title: 'Preparando Envío', status: 'current', date: null },
-        { id: 3, title: 'En Tránsito', status: 'pending', date: null },
-        { id: 4, title: 'Entregado', status: 'pending', date: null },
+        { id: 1, key: 'confirmed', title: 'Pedido Confirmado' },
+        { id: 2, key: 'preparing', title: 'Preparando Envío' },
+        { id: 3, key: 'shipped', title: 'En Tránsito' },
+        { id: 4, key: 'delivered', title: 'Entregado' },
     ];
+    const currentStatus = orderData.status;
+    const currentStepIndex = trackingSteps.findIndex(s => s.key === currentStatus);
 
     return (
         <div className="min-h-screen bg-gray-50 relative overflow-hidden">
@@ -65,7 +82,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                     </p>
                     <div className="inline-flex items-center bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
                         <Package className="h-4 w-4 mr-2" />
-                        Pedido #{orderData.orderNumber}
+                        Pedido #{orderData.orderId}
                     </div>
                 </div>
 
@@ -107,42 +124,41 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                             </h2>
 
                             <div className="space-y-4">
-                                {trackingSteps.map((step, index) => (
-                                    <div key={step.id} className="flex items-center">
-                                        <div className={`flex items-center justify-center w-8 h-8 rounded-full border-2 ${step.status === 'completed'
-                                                ? 'bg-green-600 border-green-600 text-white'
-                                                : step.status === 'current'
-                                                    ? 'bg-blue-600 border-blue-600 text-white'
-                                                    : 'border-gray-300 text-gray-400'
-                                            }`}>
-                                            {step.status === 'completed' ? (
-                                                <CheckCircle className="h-4 w-4" />
-                                            ) : (
-                                                <span className="text-xs font-bold">{step.id}</span>
-                                            )}
-                                        </div>
-
-                                        <div className="ml-4 flex-1">
-                                            <div className={`text-sm font-medium ${step.status === 'completed' || step.status === 'current'
-                                                    ? 'text-gray-900'
-                                                    : 'text-gray-400'
-                                                }`}>
+                                {trackingSteps.map((step, idx) => {
+                                    const isCompleted = idx < currentStepIndex || (orderData.status === 'delivered' && idx === currentStepIndex);
+                                    const isCurrent = idx === currentStepIndex;
+                                    return (
+                                        <div key={step.id} className="flex items-center">
+                                            <div className={
+                                                `w-8 h-8 rounded-full flex items-center justify-center
+                                                ${isCompleted ? 'bg-green-600 text-white' : isCurrent ? 'bg-green-500 text-white border-green-500 border-2' : 'bg-gray-300 text-gray-400'}`
+                                            }>
+                                                {isCompleted ? <CheckCircle className="h-4 w-4" /> : <span>{step.id}</span>}
+                                            </div>
+                                            <div className={`ml-4 font-medium ${isCurrent ? 'text-green-600' : isCompleted ? 'text-gray-900' : 'text-gray-400'}`}>
                                                 {step.title}
                                             </div>
-                                            {step.date && (
-                                                <div className="text-xs text-gray-500">
-                                                    {formatDate(step.date)}
-                                                </div>
-                                            )}
                                         </div>
-
-                                        {index < trackingSteps.length - 1 && (
-                                            <div className={`absolute left-4 mt-8 w-0.5 h-6 ${step.status === 'completed' ? 'bg-green-600' : 'bg-gray-300'
-                                                }`} style={{ marginLeft: '15px' }} />
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
+
+                            {orderData.status === "shipped" && (
+                                <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                                    <p className="text-yellow-800 font-medium">
+                                        🚚 ¡Tu pedido ya está en camino!<br />
+                                        Cuando estemos cerca del lugar de entrega, nos estaremos comunicando contigo para coordinar la entrega.
+                                    </p>
+                                </div>
+                            )}
+                            {orderData.status === "delivered" && (
+                                <div className="mt-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                                    <p className="text-yellow-800 font-medium">
+                                        ¡Producto entregado! 😊<br />
+                                            Gracias por tu compra.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="mt-6 p-4 bg-blue-50 rounded-lg">
                                 <div className="flex items-center text-blue-700">
@@ -164,15 +180,12 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                             </h2>
 
                             <div className="space-y-4">
-                                {orderData.items.map((item, index) => {
-                                    const size = item.product.sizes.find((s: any) => s.id === item.sizeId);
-                                    const color = item.product.colors.find((c: any) => c.id === item.colorId);
-
+                                {orderData.items.map((item: any, index: number) => {
                                     return (
                                         <div key={index} className="flex items-center space-x-4 py-4 border-b border-gray-100 last:border-b-0">
                                             <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                                                 <img
-                                                    src={item.product.images[0]}
+                                                    src={getImageUrl(item.product.images?.[0] || '')}
                                                     alt={item.product.name}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -182,14 +195,14 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                                                     {item.product.name}
                                                 </h4>
                                                 <div className="text-sm text-gray-500 mt-1">
-                                                    Talla: {size?.name} • Color: {color?.name}
+                                                    Talla: {item.size} • Color: {item.color}
                                                 </div>
                                                 <div className="text-sm text-gray-500">
                                                     Cantidad: {item.quantity}
                                                 </div>
                                             </div>
                                             <div className="text-sm font-medium text-gray-900">
-                                                {formatPrice(item.unitPrice * item.quantity)}
+                                                {formatPrice(item.product.price * item.quantity)}
                                             </div>
                                         </div>
                                     );
@@ -207,16 +220,16 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                                 </h3>
                                 <div className="text-sm text-gray-600 space-y-1">
                                     <p className="font-medium text-gray-900">
-                                        {orderData.shippingInfo.firstName} {orderData.shippingInfo.lastName}
+                                        {orderData.shipping?.firstName} {orderData.shipping?.lastName}
                                     </p>
-                                    <p>{orderData.shippingInfo.address}</p>
+                                    <p>{orderData.shipping?.address}</p>
                                     <p>
-                                        {orderData.shippingInfo.city}, {orderData.shippingInfo.state} {orderData.shippingInfo.zipCode}
+                                        {orderData.shipping?.city}, {orderData.shipping?.state} {orderData.shipping?.zipCode}
                                     </p>
-                                    <p>{orderData.shippingInfo.country}</p>
+                                    <p>{orderData.shipping?.country}</p>
                                     <div className="pt-2 border-t border-gray-100 mt-3">
-                                        <p><strong>Email:</strong> {orderData.shippingInfo.email}</p>
-                                        <p><strong>Teléfono:</strong> {orderData.shippingInfo.phone}</p>
+                                        <p><strong>Email:</strong> {orderData.user?.email}</p>
+                                        <p><strong>Teléfono:</strong> {orderData.user?.phone}</p>
                                     </div>
                                 </div>
                             </div>
@@ -231,8 +244,9 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                                     <div className="flex items-center justify-between mb-2">
                                         <span>Método:</span>
                                         <span className="font-medium text-gray-900">
-                                            {orderData.paymentMethod === 'card' && 'Tarjeta de Crédito'}
-                                            {orderData.paymentMethod === 'paypal' && 'PayPal'}
+                                            {orderData.payment.method === 'card' && 'Tarjeta de Crédito'}
+                                            {orderData.payment.method === 'paypal' && 'PayPal'}
+                                            {orderData.payment.method === 'izipay' && 'Izipay'}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between mb-2">
@@ -272,7 +286,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                                     <Phone className="h-5 w-5 text-blue-600" />
                                     <div>
                                         <div className="text-sm font-medium text-gray-900">Teléfono</div>
-                                        <div className="text-xs text-gray-500">+34 900 123 456</div>
+                                        <div className="text-xs text-gray-500">+51 999 999 999</div>
                                     </div>
                                 </div>
                             </div>
@@ -282,7 +296,7 @@ export const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ orderData 
                                     📧 Confirmación Enviada
                                 </h4>
                                 <p className="text-xs text-blue-700">
-                                    Hemos enviado los detalles de tu pedido a {orderData.shippingInfo.email}
+                                    Hemos enviado los detalles de tu pedido a {orderData.user?.email}
                                 </p>
                             </div>
 

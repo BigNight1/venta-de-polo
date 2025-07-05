@@ -1,39 +1,27 @@
+export interface ProductVariant {
+  size: string;
+  color: string;
+  stock: number;
+}
+
 export interface Product {
-  id: string;
-  _id?: string;
+  _id: string;
   name: string;
   description: string;
   price: number;
   images: string[];
+  variants: ProductVariant[];
   category: 'hombre' | 'mujer' | 'ninos';
-  sizes: Size[];
-  colors: Color[];
   inStock: boolean;
   featured: boolean;
   createdAt: string;
 }
 
-export interface Size {
-  id: string;
-  name: string;
-  stock: number;
-}
-
-export interface Color {
-  id: string;
-  name: string;
-  hex: string;
-  stock: number;
-}
-
 export interface CartItem {
-  id: string;
-  productId: string;
   product: Product;
-  sizeId: string;
-  colorId: string;
+  size: string;
+  color: string;
   quantity: number;
-  unitPrice: number;
 }
 
 export interface User {
@@ -58,8 +46,8 @@ export interface OrderItem {
   id: string;
   productId: string;
   product: Product;
-  sizeId: string;
-  colorId: string;
+  size: string;
+  color: string;
   quantity: number;
   unitPrice: number;
 }
@@ -75,8 +63,8 @@ export interface Address {
 export interface FilterState {
   category: string;
   priceRange: [number, number];
-  sizes: string[];
-  colors: string[];
+  size: string;
+  color: string;
   search: string;
 }
 

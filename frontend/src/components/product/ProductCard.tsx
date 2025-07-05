@@ -10,14 +10,30 @@ interface ProductCardProps {
   product: Product;
 }
 
+// Mapa de colores estándar
+const COLOR_MAP: Record<string, string> = {
+  'BLANCO': '#FFFFFF',
+  'NEGRO': '#000000',
+  'ROJO': '#DC2626',
+  'AZUL': '#2563EB',
+  'VERDE': '#16A34A',
+  'ROSA': '#EC4899',
+  'AMARILLO': '#EAB308',
+  'MORADO': '#9333EA',
+};
+
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { setSelectedProduct, addToCart } = useStore();
 
-  const handleQuickAdd = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Add with default first size and color
-    if (product.sizes.length > 0 && product.colors.length > 0) {
-      addToCart(product, product.sizes[0].id, product.colors[0].id, 1);
+  // Extraer tallas y colores únicos de las variantes
+  const uniqueSizes = Array.from(new Set(product.variants.map(v => v.size)));
+  const uniqueColors = Array.from(new Set(product.variants.map(v => v.color.toUpperCase())));
+
+  // Al hacer clic en agregar al carrito, usar la primera variante disponible
+  const handleAddToCart = () => {
+    const firstVariant = product.variants.find(v => v.stock > 0);
+    if (firstVariant) {
+      addToCart(product, firstVariant.size, firstVariant.color, 1);
     }
   };
 
@@ -33,7 +49,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         onClick={handleProductClick}
       >
         <img
-          src={getImageUrl(product.images[0])}
+          src={getImageUrl(product.images[0] || '')}
           alt={product.name}
           className="w-full h-full object-cover transform transition-transform duration-200 ease-out group-hover:scale-105"
           loading="lazy"
@@ -44,7 +60,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <div className="flex space-x-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
             <Button
               size="sm"
-              onClick={handleQuickAdd}
+              onClick={handleAddToCart}
               className="shadow-lg backdrop-blur-sm"
             >
               <ShoppingCart className="h-4 w-4 mr-1" />
@@ -88,16 +104,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         {/* Colors */}
         <div className="flex items-center space-x-1 mb-3">
           <span className="text-xs text-gray-500 mr-2">Colores:</span>
-          {product.colors.slice(0, 4).map((color) => (
+          {uniqueColors.slice(0, 4).map((color) => (
+            COLOR_MAP[color] ? (
             <div
-              key={color.id}
+                key={color}
+                className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
+                style={{ backgroundColor: COLOR_MAP[color] }}
+                title={color}
+              />
+            ) : /^#([0-9A-F]{3}){1,2}$/i.test(color) ? (
+              <div
+                key={color}
               className="w-4 h-4 rounded-full border border-gray-300 shadow-sm"
-              style={{ backgroundColor: color.hex }}
-              title={color.name}
+                style={{ backgroundColor: color }}
+                title={color}
             />
+            ) : (
+              <span key={color} className="text-xs text-gray-700 font-semibold border px-1 rounded bg-gray-100">{color}</span>
+            )
           ))}
-          {product.colors.length > 4 && (
-            <span className="text-xs text-gray-500">+{product.colors.length - 4}</span>
+          {uniqueColors.length > 4 && (
+            <span className="text-xs text-gray-500">+{uniqueColors.length - 4}</span>
           )}
         </div>
 
@@ -105,16 +132,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="flex items-center space-x-1 mb-3">
           <span className="text-xs text-gray-500 mr-2">Tallas:</span>
           <div className="flex flex-wrap gap-1">
-            {product.sizes.slice(0, 4).map((size) => (
+            {uniqueSizes.slice(0, 4).map((size) => (
               <span
-                key={size.id}
+                key={size}
                 className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded"
               >
-                {size.name}
+                {size}
               </span>
             ))}
-            {product.sizes.length > 4 && (
-              <span className="text-xs text-gray-500">+{product.sizes.length - 4}</span>
+            {uniqueSizes.length > 4 && (
+              <span className="text-xs text-gray-500">+{uniqueSizes.length - 4}</span>
             )}
           </div>
         </div>
@@ -129,7 +156,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           
           <Button
             size="sm"
-            onClick={handleQuickAdd}
+            onClick={handleAddToCart}
             disabled={!product.inStock}
             className="min-w-[100px]"
           >

@@ -9,9 +9,9 @@ interface StoreState {
 
   // Cart state
   cartItems: CartItem[];
-  addToCart: (product: Product, sizeId: string, colorId: string, quantity: number) => void;
-  removeFromCart: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
+  addToCart: (product: Product, size: string, color: string, quantity: number) => void;
+  removeFromCart: (productId: string, size: string, color: string) => void;
+  updateQuantity: (productId: string, size: string, color: string, quantity: number) => void;
   clearCart: () => void;
   getCartTotal: () => number;
   getCartItemsCount: () => number;
@@ -39,8 +39,8 @@ interface StoreState {
 const initialFilters: FilterState = {
   category: '',
   priceRange: [0, 500],
-  sizes: [],
-  colors: [],
+  size: '',
+  color: '',
   search: '',
 };
 
@@ -53,54 +53,61 @@ export const useStore = create<StoreState>()(
 
       // Cart state
       cartItems: [],
-      addToCart: (product, sizeId, colorId, quantity) => {
+      addToCart: (product, size, color, quantity) => {
         const cartItems = get().cartItems;
         const existingItemIndex = cartItems.findIndex(
           item => 
-            item.productId === product.id && 
-            item.sizeId === sizeId && 
-            item.colorId === colorId
+            item.product._id === product._id && 
+            item.size === size && 
+            item.color === color
         );
-
+        const variant = product.variants.find(v => v.size.toUpperCase() === size.toUpperCase() && v.color.toUpperCase() === color.toUpperCase());
+        const maxStock = variant?.stock || 1;
         if (existingItemIndex >= 0) {
           const updatedItems = [...cartItems];
-          updatedItems[existingItemIndex].quantity += quantity;
+          const newQty = Math.min(updatedItems[existingItemIndex].quantity + quantity, maxStock);
+          updatedItems[existingItemIndex].quantity = newQty;
           set({ cartItems: updatedItems });
         } else {
           const newItem: CartItem = {
-            id: `${product.id}-${sizeId}-${colorId}-${Date.now()}`,
-            productId: product.id,
             product,
-            sizeId,
-            colorId,
-            quantity,
-            unitPrice: product.price,
+            size,
+            color,
+            quantity: Math.min(quantity, maxStock),
           };
           set({ cartItems: [...cartItems, newItem] });
         }
       },
 
-      removeFromCart: (itemId) => {
-        const cartItems = get().cartItems.filter(item => item.id !== itemId);
+      removeFromCart: (productId, size, color) => {
+        const cartItems = get().cartItems.filter(item => 
+          !(item.product._id === productId && item.size === size && item.color === color)
+        );
         set({ cartItems });
       },
 
-      updateQuantity: (itemId, quantity) => {
+      updateQuantity: (productId, size, color, quantity) => {
+        const cartItems = get().cartItems;
+        const product = cartItems.find(item => item.product._id === productId)?.product;
+        const variant = product?.variants.find(v => v.size.toUpperCase() === size.toUpperCase() && v.color.toUpperCase() === color.toUpperCase());
+        const maxStock = variant?.stock || 1;
         if (quantity <= 0) {
-          get().removeFromCart(itemId);
+          get().removeFromCart(productId, size, color);
           return;
         }
-        
-        const cartItems = get().cartItems.map(item =>
-          item.id === itemId ? { ...item, quantity } : item
+        const newQty = Math.min(quantity, maxStock);
+        const updatedCart = cartItems.map(item =>
+          (item.product._id === productId && item.size === size && item.color === color)
+            ? { ...item, quantity: newQty }
+            : item
         );
-        set({ cartItems });
+        set({ cartItems: updatedCart });
       },
 
       clearCart: () => set({ cartItems: [] }),
 
       getCartTotal: () => {
-        return get().cartItems.reduce((total, item) => total + (item.unitPrice * item.quantity), 0);
+        return get().cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
       },
 
       getCartItemsCount: () => {

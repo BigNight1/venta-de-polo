@@ -10,12 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lyracom/embedded-form-glue": "^1.4.2",
     "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.10.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.22.3",
+    "sweetalert2": "^11.22.2",
     "tailwind-merge": "^2.2.0",
     "zustand": "^4.4.7"
   },

@@ -4,9 +4,11 @@ import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { useAdminInfo } from '../../context/AdminInfoContext';
 import { getImageUrl } from '../../lib/getImageUrl';
+import { OrdersPanel } from './OrdersPanel';
+import Swal from 'sweetalert2';
 
 export const AdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'analytics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'analytics' | 'orders'>('overview');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const {
@@ -25,48 +27,126 @@ export const AdminPanel: React.FC = () => {
     createProduct,
     updateProduct,
     deleteProduct,
-    addSize,
-    updateSize,
-    removeSize,
-    addColor,
-    updateColor,
-    removeColor,
-    addImage,
-    removeImage,
   } = useAdminInfo();
 
-  const handleSave = async () => {
-    if (!formData.name || !formData.description || formData.price === undefined) {
-      alert('Por favor completa todos los campos obligatorios');
-      return;
+  // --- VARIANTES ---
+  const COLOR_MAP: Record<string, string> = {
+    'BLANCO': '#FFFFFF',
+    'NEGRO': '#000000',
+    'ROJO': '#DC2626',
+    'AZUL': '#2563EB',
+    'VERDE': '#16A34A',
+    'ROSA': '#EC4899',
+    'AMARILLO': '#EAB308',
+    'MORADO': '#9333EA',
+    // Puedes agregar más colores estándar aquí
+  };
+
+  const [variantForm, setVariantForm] = useState({ size: '', color: '', stock: 1 });
+  const [editingVariantIdx, setEditingVariantIdx] = useState<number | null>(null);
+  const [imageUploadError, setImageUploadError] = useState('');
+  const [imageUploading, setImageUploading] = useState(false);
+  const [variantError, setVariantError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteSuccess, setDeleteSuccess] = useState('');
+
+  const handleVariantInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setVariantForm((prev) => ({ ...prev, [name]: name === 'stock' ? Number(value) : value }));
+  };
+
+  const handleAddOrUpdateVariant = () => {
+    if (!variantForm.size || !variantForm.color || variantForm.stock < 1) return;
+    const newVariant = {
+      size: variantForm.size.toUpperCase(),
+      color: variantForm.color,
+      stock: variantForm.stock,
+    };
+    if (editingVariantIdx !== null) {
+      // Actualizar variante existente
+      const updated = [...(formData.variants || [])];
+      updated[editingVariantIdx] = newVariant;
+      updateFormData({ variants: updated });
+      setEditingVariantIdx(null);
+    } else {
+      // Agregar nueva variante
+      updateFormData({
+        variants: [
+          ...(formData.variants || []),
+          newVariant
+        ]
+      });
     }
-    
+    setVariantForm({ size: '', color: '', stock: 1 });
+  };
+
+  const handleEditVariant = (idx: number) => {
+    const v = (formData.variants || [])[idx];
+    setVariantForm({ size: v.size, color: v.color, stock: v.stock });
+    setEditingVariantIdx(idx);
+  };
+
+  const handleRemoveVariant = (idx: number) => {
+    updateFormData({
+      variants: (formData.variants || []).filter((_, i) => i !== idx)
+    });
+    if (editingVariantIdx === idx) {
+      setEditingVariantIdx(null);
+      setVariantForm({ size: '', color: '', stock: 1 });
+    }
+  };
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setSaveError('');
+    setSaveSuccess('');
+    if (!formData.variants || formData.variants.length === 0) {
+      setVariantError('Debes agregar al menos una variante.');
+      return;
+    } else {
+      setVariantError('');
+    }
     try {
-      if (editingProduct && editingProduct.id) {
-        await updateProduct(editingProduct.id, formData);
+      console.log('Guardando producto:', formData);
+      if (editingProduct && editingProduct._id) {
+        await updateProduct(editingProduct._id, formData);
+        setSaveSuccess('Producto actualizado correctamente.');
       } else {
         await createProduct(formData);
-        alert('Producto creado correctamente');
+        setSaveSuccess('Producto guardado correctamente.');
       }
+      setTimeout(() => setSaveSuccess(''), 2000);
       resetForm();
-    } catch (err) {
-      // Error ya manejado en el contexto
+    } catch (err: any) {
+      setSaveError(err?.message || 'Error al guardar el producto.');
+      console.error('Error al guardar producto:', err);
     }
   };
 
   const handleDelete = async (productId: string) => {
-    if (!productId) {
-      alert('ID de producto no válido');
-      return;
-    }
-    
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este producto?')) return;
-    
+    setDeleteError('');
+    setDeleteSuccess('');
+    // SweetAlert2 confirmación
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Esta acción no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, borrar',
+      cancelButtonText: 'No',
+      reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
     try {
       await deleteProduct(productId);
-      alert('Producto eliminado correctamente');
-    } catch (err) {
-      // Error ya manejado en el contexto
+      setDeleteSuccess('Producto eliminado correctamente.');
+      setTimeout(() => setDeleteSuccess(''), 2000);
+      resetForm();
+    } catch (err: any) {
+      setDeleteError(err?.message || 'Error al eliminar el producto.');
+      console.error('Error al eliminar producto:', err);
     }
   };
 
@@ -79,27 +159,51 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUploadError('');
+    setImageUploading(true);
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    if (!files || files.length === 0) {
+      setImageUploading(false);
+      return;
+    }
+    const token = localStorage.getItem('admin_token');
+    const uploadedPaths: string[] = [];
     for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       const formDataFile = new FormData();
-      formDataFile.append('file', files[i]);
+      formDataFile.append('file', file);
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
           method: 'POST',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('admin_token') || ''}`
-          },
-          body: formDataFile
+          body: formDataFile,
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
+        if (res.status === 401) {
+          setImageUploadError('No autorizado para subir imágenes. Inicia sesión como admin.');
+          setImageUploading(false);
+          return;
+        }
+        if (!res.ok) {
+          setImageUploadError('Error al subir la imagen.');
+          setImageUploading(false);
+          return;
+        }
         const data = await res.json();
         if (data.filePath) {
-          updateFormData({ images: [...(formData.images || []), data.filePath] });
+          uploadedPaths.push(data.filePath);
+        } else {
+          setImageUploadError('No se recibió la ruta de la imagen.');
         }
       } catch (err) {
-        alert('Error al subir la imagen');
+        setImageUploadError('Error al subir la imagen.');
       }
     }
+    if (uploadedPaths.length > 0) {
+      const currentImages = formData.images || [];
+      const newImages = [...currentImages, ...uploadedPaths];
+      updateFormData({ images: newImages });
+    }
+    setImageUploading(false);
     e.target.value = '';
   };
 
@@ -180,9 +284,9 @@ export const AdminPanel: React.FC = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Productos Recientes</h3>
         <div className="space-y-3">
           {products.slice(0, 5).map((product, index) => (
-            <div key={`recent-${product.id}-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+            <div key={`recent-${product._id}-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <img
-                src={getImageUrl(product.images[0])}
+                src={getImageUrl(product.images[0] || '')}
                 alt={product.name}
                 className="w-12 h-12 rounded-lg object-cover"
               />
@@ -225,11 +329,11 @@ export const AdminPanel: React.FC = () => {
           
           <div className="divide-y divide-gray-200 max-h-[70vh] overflow-y-auto">
             {products.map((product, index) => (
-              <div key={`product-${product.id}-${index}`} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={`product-${product._id}-${index}`} className="p-6 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                     <img
-                      src={getImageUrl(product.images[0])}
+                      src={getImageUrl(product.images[0] || '')}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -267,14 +371,14 @@ export const AdminPanel: React.FC = () => {
                       disabled={isLoading}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {isLoading && editingProduct?.id === product.id ? (
+                      {isLoading && editingProduct?._id === product._id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Edit className="h-4 w-4" />
                       )}
                     </button>
                     <button
-                      onClick={() => product.id && handleDelete(product.id)}
+                      onClick={() => handleDelete(product._id)}
                       disabled={isLoading}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
@@ -309,7 +413,7 @@ export const AdminPanel: React.FC = () => {
             </div>
 
             <div className="p-6 max-h-[70vh] overflow-y-auto">
-              <form className="space-y-4">
+              <form onSubmit={handleSave} className="space-y-4">
                 {/* Basic Info */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -376,48 +480,85 @@ export const AdminPanel: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Images */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Imágenes
-                    </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={isLoading}
-                      className="text-sm"
-                    />
-                  </div>
-                  <div className="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                    {(formData.images || []).map((image, index) => (
-                      <div key={`image-${index}-${image}`} className="relative group flex-shrink-0">
+                {/* Image */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Imágenes</label>
+                  <div className="flex items-center overflow-x-auto space-x-3 pb-2">
+                    {/* Imágenes existentes */}
+                    {formData.images && formData.images.map((image, index) => (
+                      <div key={index} className="relative flex-shrink-0">
                         <img
                           src={getImageUrl(image)}
                           alt={`Imagen ${index + 1}`}
-                          className="w-20 h-20 object-cover rounded cursor-pointer border-2 border-gray-200 hover:border-blue-500"
+                          className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
                           onClick={() => setPreviewImage(image)}
                         />
                         <button
                           type="button"
-                          onClick={() => removeImage(index)}
-                          disabled={isLoading}
-                          className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-600 hover:text-red-800 shadow group-hover:opacity-100 opacity-80"
+                          onClick={() => {
+                            const newImages = formData.images?.filter((_, i) => i !== index) || [];
+                            updateFormData({ images: newImages });
+                          }}
+                          className="absolute -top-[0px] -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow"
                         >
-                          <X className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewImage(image)}
-                          className="absolute bottom-1 right-1 bg-white rounded-full p-1 text-blue-600 hover:text-blue-800 shadow group-hover:opacity-100 opacity-80"
-                        >
-                          <Eye className="h-4 w-4" />
+                          ×
                         </button>
                       </div>
                     ))}
+                    {/* Cuadro '+' para agregar nueva imagen */}
+                    <div className="w-20 h-20 flex items-center justify-center border-2 border-dashed border-gray-300 rounded cursor-pointer bg-gray-50 hover:bg-gray-100 flex-shrink-0 relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          setImageUploadError('');
+                          setImageUploading(true);
+                          const file = e.target.files?.[0];
+                          if (!file) {
+                            setImageUploading(false);
+                            return;
+                          }
+                          const token = localStorage.getItem('admin_token');
+                          const formDataFile = new FormData();
+                          formDataFile.append('file', file);
+                          try {
+                            const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+                              method: 'POST',
+                              body: formDataFile,
+                              headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            });
+                            if (res.status === 401) {
+                              setImageUploadError('No autorizado para subir imágenes. Inicia sesión como admin.');
+                              setImageUploading(false);
+                              return;
+                            }
+                            if (!res.ok) {
+                              setImageUploadError('Error al subir la imagen.');
+                              setImageUploading(false);
+                              return;
+                            }
+                            const data = await res.json();
+                            if (data.filePath) {
+                              const currentImages = formData.images || [];
+                              const newImages = [...currentImages, data.filePath];
+                              updateFormData({ images: newImages });
+                            } else {
+                              setImageUploadError('No se recibió la ruta de la imagen.');
+                            }
+                          } catch (err) {
+                            setImageUploadError('Error al subir la imagen.');
+                          }
+                          setImageUploading(false);
+                          e.target.value = '';
+                        }}
+                        disabled={isLoading || imageUploading}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                      <Plus className="h-8 w-8 text-gray-400" />
+                    </div>
                   </div>
+                  {imageUploading && <div className="text-blue-500 text-xs mt-1">Subiendo imagen...</div>}
+                  {imageUploadError && <div className="text-red-500 text-xs mt-1">{imageUploadError}</div>}
                 </div>
 
                 {/* Modal de previsualización de imagen */}
@@ -435,107 +576,6 @@ export const AdminPanel: React.FC = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Sizes */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Tallas
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addSize}
-                      disabled={isLoading}
-                      className="text-blue-600 hover:text-blue-700 text-sm disabled:opacity-50"
-                    >
-                      + Agregar
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {formData.sizes?.map((size, index) => (
-                      <div key={`size-${size.id || index}`} className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          value={size.name}
-                          onChange={(e) => updateSize(index, 'name', e.target.value)}
-                          disabled={isLoading}
-                          placeholder="Talla"
-                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <input
-                          type="number"
-                          value={size.stock}
-                          onChange={(e) => updateSize(index, 'stock', parseInt(e.target.value) || 0)}
-                          disabled={isLoading}
-                          placeholder="Stock"
-                          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeSize(index)}
-                          disabled={isLoading}
-                          className="text-red-600 hover:text-red-700 disabled:opacity-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Colors */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Colores
-                    </label>
-                    <button
-                      type="button"
-                      onClick={addColor}
-                      disabled={isLoading}
-                      className="text-blue-600 hover:text-blue-700 text-sm disabled:opacity-50"
-                    >
-                      + Agregar
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {formData.colors?.map((color, index) => (
-                      <div key={`color-${color.id || index}`} className="flex items-center space-x-2">
-                        <input
-                          type="color"
-                          value={color.hex}
-                          onChange={(e) => updateColor(index, 'hex', e.target.value)}
-                          disabled={isLoading}
-                          className="w-8 h-8 border border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <input
-                          type="text"
-                          value={color.name}
-                          onChange={(e) => updateColor(index, 'name', e.target.value)}
-                          disabled={isLoading}
-                          placeholder="Nombre del color"
-                          className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <input
-                          type="number"
-                          value={color.stock}
-                          onChange={(e) => updateColor(index, 'stock', parseInt(e.target.value) || 0)}
-                          disabled={isLoading}
-                          placeholder="Stock"
-                          className="w-16 px-2 py-1 text-xs border border-gray-300 rounded disabled:opacity-50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeColor(index)}
-                          disabled={isLoading}
-                          className="text-red-600 hover:text-red-700 disabled:opacity-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
 
                 {/* Checkboxes */}
                 <div className="space-y-2">
@@ -564,11 +604,82 @@ export const AdminPanel: React.FC = () => {
                   </label>
                 </div>
 
+                {/* Variantes */}
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Variantes (Talla, Color, Stock)</label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      name="size"
+                      value={variantForm.size}
+                      onChange={handleVariantInput}
+                      placeholder="Talla"
+                      className="px-2 py-1 border rounded w-20"
+                    />
+                    <input
+                      type="text"
+                      name="color"
+                      value={variantForm.color}
+                      onChange={handleVariantInput}
+                      placeholder="Color"
+                      className="px-2 py-1 border rounded w-24"
+                    />
+                    <input
+                      type="number"
+                      name="stock"
+                      value={variantForm.stock}
+                      min={1}
+                      onChange={handleVariantInput}
+                      placeholder="Stock"
+                      className="px-2 py-1 border rounded w-16"
+                    />
+                    <Button type="button" onClick={handleAddOrUpdateVariant} className="px-3">
+                      {editingVariantIdx !== null ? 'Actualizar' : 'Agregar'}
+                    </Button>
+                    {editingVariantIdx !== null && (
+                      <Button type="button" variant="outline" onClick={() => { setEditingVariantIdx(null); setVariantForm({ size: '', color: '', stock: 1 }); }} className="px-3">Cancelar</Button>
+                    )}
+                  </div>
+                  {/* Lista de variantes */}
+                  {(formData.variants || []).length > 0 && (
+                    <div className="border rounded p-2 bg-gray-50">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr>
+                            <th className="text-left">Talla</th>
+                            <th className="text-left">Color</th>
+                            <th className="text-left">Stock</th>
+                            <th></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(formData.variants || []).map((v, idx) => (
+                            <tr key={idx}>
+                              <td>{v.size}</td>
+                              <td>
+                                <span className="inline-flex items-center gap-1">
+                                  <span style={{ background: COLOR_MAP[v.color.toUpperCase()] || '#F3F4F6', border: '1px solid #ccc', display: 'inline-block', width: 16, height: 16, borderRadius: '50%' }} />
+                                  <span>{v.color}</span>
+                                </span>
+                              </td>
+                              <td>{v.stock}</td>
+                              <td>
+                                <button type="button" onClick={() => handleEditVariant(idx)} className="text-blue-500 hover:underline mr-2">Editar</button>
+                                <button type="button" onClick={() => handleRemoveVariant(idx)} className="text-red-500 hover:underline">Eliminar</button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
                 {/* Actions */}
                 <div className="flex space-x-3 pt-4">
                   <Button 
-                    onClick={handleSave} 
-                    disabled={isLoading}
+                    type="submit"
+                    disabled={isLoading || !formData.name || !formData.price || !formData.images || !formData.category || !(formData.variants && formData.variants.length > 0)}
                     className="flex-1"
                   >
                     {isLoading ? (
@@ -578,6 +689,9 @@ export const AdminPanel: React.FC = () => {
                     )}
                     {isLoading ? 'Guardando...' : 'Guardar'}
                   </Button>
+                  {variantError && <div className="text-red-500 text-xs mt-1">{variantError}</div>}
+                  {saveError && <div className="text-red-500 text-xs mt-1">{saveError}</div>}
+                  {saveSuccess && <div className="text-green-600 text-xs mt-1">{saveSuccess}</div>}
                   <Button 
                     variant="outline" 
                     onClick={resetForm} 
@@ -625,6 +739,16 @@ export const AdminPanel: React.FC = () => {
               >
                 Productos
               </button>
+              <button
+                onClick={() => setActiveTab('orders')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'orders'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                Pedidos
+              </button>
             </div>
           </div>
         </div>
@@ -633,6 +757,7 @@ export const AdminPanel: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'products' && renderProducts()}
+        {activeTab === 'orders' && <OrdersPanel />}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { ProductsModule } from './products/products.module';
 import { SeedModule } from './seed/seed.module';
 import config from 'config';
+import { OrdersModule } from './orders/orders.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import config from 'config';
     UploadModule,
     PaymentsModule,
     ProductsModule,
+    OrdersModule,
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),

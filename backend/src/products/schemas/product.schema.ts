@@ -1,26 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
 
 export type ProductDocument = Product & Document;
 
 @Schema()
-export class Size {
+export class Variant {
   @Prop({ required: true })
-  id: string;
-  @Prop({ required: true })
-  name: string;
-  @Prop({ required: true })
-  stock: number;
-}
+  size: string;
 
-@Schema()
-export class Color {
   @Prop({ required: true })
-  id: string;
-  @Prop({ required: true })
-  name: string;
-  @Prop({ required: true })
-  hex: string;
+  color: string;
+
   @Prop({ required: true })
   stock: number;
 }
@@ -42,11 +32,8 @@ export class Product {
   @Prop({ required: true })
   category: string;
 
-  @Prop({ type: [MongooseSchema.Types.Mixed], required: true })
-  sizes: Size[];
-
-  @Prop({ type: [MongooseSchema.Types.Mixed], required: true })
-  colors: Color[];
+  @Prop({ type: [Variant], required: true })
+  variants: Variant[];
 
   @Prop({ required: true })
   inStock: boolean;
@@ -58,15 +45,13 @@ export class Product {
   createdAt?: string;
 }
 
-export const SizeSchema = SchemaFactory.createForClass(Size);
-export const ColorSchema = SchemaFactory.createForClass(Color);
+export const VariantSchema = SchemaFactory.createForClass(Variant);
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
 // Transformar _id a id cuando se serializa a JSON
 ProductSchema.set('toJSON', {
   transform: function(doc, ret) {
     ret.id = ret._id;
-    delete ret._id;
     delete ret.__v;
     return ret;
   }

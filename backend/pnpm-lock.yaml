@@ -35,6 +35,9 @@ importers:
       '@nestjs/serve-static':
         specifier: ^5.0.3
         version: 5.0.3(@nestjs/common@10.4.6(class-transformer@0.5.1)(class-validator@0.14.2)(reflect-metadata@0.2.2)(rxjs@7.8.1))(@nestjs/core@10.4.6)
+      '@types/crypto-js':
+        specifier: ^4.2.2
+        version: 4.2.2
       '@types/fs-extra':
         specifier: ^11.0.4
         version: 11.0.4
@@ -47,6 +50,9 @@ importers:
       class-validator:
         specifier: ^0.14.2
         version: 0.14.2
+      crypto-js:
+        specifier: ^4.2.0
+        version: 4.2.0
       fs-extra:
         specifier: ^11.3.0
         version: 11.3.0
@@ -728,6 +734,9 @@ packages:
 
   '@types/cookiejar@2.1.5':
     resolution: {integrity: sha512-he+DHOWReW0nghN24E1WUqM0efK4kI9oTqDm6XmK8ZPe2djZ90BSNdGnIyCLzCPw7/pogPlGbzI2wHGGmi4O/Q==}
+
+  '@types/crypto-js@4.2.2':
+    resolution: {integrity: sha512-sDOLlVbHhXpAUAL0YHDUUwDZf3iN4Bwi4W6a0W0b+QcAezUbRtH4FVb+9J4h+XFPW7l/gQ9F8qC7P+Ec4k8QVQ==}
 
   '@types/estree@1.0.6':
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
@@ -3921,6 +3930,8 @@ snapshots:
       '@types/node': 20.17.1
 
   '@types/cookiejar@2.1.5': {}
+
+  '@types/crypto-js@4.2.2': {}
 
   '@types/estree@1.0.6': {}
 

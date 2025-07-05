@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Truck, Shield, MapPin, User, Mail, Phone, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, CreditCard, Truck, Shield, MapPin, User, Mail, Phone} from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { OrderConfirmation } from './OrderConfirmation';
 import { getImageUrl } from '../../lib/getImageUrl';
+import { useNavigate } from 'react-router-dom';
+import { IzipayCheckout } from './IzipayCheckout';
 
 interface ShippingInfo {
   firstName: string;
@@ -16,21 +17,17 @@ interface ShippingInfo {
   state: string;
   zipCode: string;
   country: string;
-}
-
-interface PaymentInfo {
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
-  cardName: string;
+  orderId?: string;
+  identityType?: string;
+  identityCode?: string;
+  reference?: string;
 }
 
 export const CheckoutPage: React.FC = () => {
   const { cartItems, getCartTotal, clearCart, setCartOpen } = useStore();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [orderData, setOrderData] = useState<any | null>(null);
-  
+
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: '',
     lastName: '',
@@ -40,54 +37,97 @@ export const CheckoutPage: React.FC = () => {
     city: '',
     state: '',
     zipCode: '',
-    country: 'España',
+    country: 'Perú',
   });
 
-  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({
-    cardNumber: '',
-    expiryDate: '',
-    cvv: '',
-    cardName: '',
-  });
-
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'paypal' | 'transfer'>('card');
+  const [izipayToken, setIzipayToken] = useState<{ formToken: string, publicKey: string, config: any } | null>(null);
+  const [izipayError, setIzipayError] = useState('');
 
   const subtotal = getCartTotal();
-  const shipping = subtotal > 50 ? 0 : 4.99;
-  const tax = subtotal * 0.21; // IVA 21%
-  const total = subtotal + shipping + tax;
+  const shipping = subtotal > 50 ? 0 : 10;
+  const total = subtotal + shipping;
+
+  useEffect(() => {
+    if (currentStep === 2) {
+      setIzipayToken(null);
+      setIzipayError('');
+      // Generar orderId si no existe
+      const orderId = shippingInfo.orderId || `ORD-${Date.now()}`;
+      const body = {
+        amount: total,
+        ...shippingInfo,
+        orderId,
+        phoneNumber: shippingInfo.phone || '',
+        identityType: shippingInfo.identityType || 'DNI',
+        identityCode: shippingInfo.identityCode || '',
+        reference: shippingInfo.identityCode || '',
+        items: cartItems,
+      };
+      
+      fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/formtoken`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.formToken && data.publicKey) {
+            setIzipayToken({ formToken: data.formToken, publicKey: data.publicKey, config: null });
+          } else {
+            setIzipayError('No se pudo obtener la pasarela de pago.');
+          }
+        })
+        .catch(() => setIzipayError('No se pudo obtener la pasarela de pago.'));
+    }
+  }, [currentStep, total, shippingInfo, cartItems]);
+
+  useEffect(() => {
+    if (currentStep === 3) {
+      setIzipayToken(null);
+      setIzipayError('');
+      // Generar orderId si no existe
+      const orderId = shippingInfo.orderId || `ORD-${Date.now()}`;
+      const body = {
+        orderId,
+        firstName: shippingInfo.firstName,
+        lastName: shippingInfo.lastName,
+        email: shippingInfo.email,
+        phoneNumber: shippingInfo.phone,
+        address: shippingInfo.address,
+        city: shippingInfo.city,
+        state: shippingInfo.state,
+        country: 'PE',
+        zipCode: shippingInfo.zipCode,
+        identityType: shippingInfo.identityType || 'DNI',
+        identityCode: shippingInfo.identityCode || '',
+        amount: total,
+        currency: 'PEN',
+      };
+      fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.token && data.keyRSA && data.config) {
+            setIzipayToken({ formToken: data.token, publicKey: data.keyRSA, config: data.config });
+          } else {
+            setIzipayToken(null);
+            setIzipayError('No se pudo obtener la pasarela de pago.');
+          }
+        })
+        .catch(() => {
+          setIzipayToken(null);
+          setIzipayError('No se pudo obtener la pasarela de pago.');
+        });
+    }
+  }, [currentStep, total, shippingInfo]);
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setShippingInfo(prev => ({
       ...prev,
       [e.target.name]: e.target.value
-    }));
-  };
-
-  const handlePaymentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    
-    // Format card number
-    if (e.target.name === 'cardNumber') {
-      value = value.replace(/\s/g, '').replace(/(.{4})/g, '$1 ').trim();
-      if (value.length > 19) value = value.substring(0, 19);
-    }
-    
-    // Format expiry date
-    if (e.target.name === 'expiryDate') {
-      value = value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '$1/$2');
-      if (value.length > 5) value = value.substring(0, 5);
-    }
-    
-    // Format CVV
-    if (e.target.name === 'cvv') {
-      value = value.replace(/\D/g, '');
-      if (value.length > 3) value = value.substring(0, 3);
-    }
-
-    setPaymentInfo(prev => ({
-      ...prev,
-      [e.target.name]: value
     }));
   };
 
@@ -97,52 +137,16 @@ export const CheckoutPage: React.FC = () => {
            shippingInfo.state && shippingInfo.zipCode;
   };
 
-  const validateStep2 = () => {
-    if (paymentMethod === 'card') {
-      return paymentInfo.cardNumber.replace(/\s/g, '').length === 16 && 
-             paymentInfo.expiryDate.length === 5 && 
-             paymentInfo.cvv.length === 3 && 
-             paymentInfo.cardName;
-    }
-    return true;
-  };
-
   const handleNextStep = () => {
     if (currentStep === 1 && validateStep1()) {
       setCurrentStep(2);
-    } else if (currentStep === 2 && validateStep2()) {
-      setCurrentStep(3);
     }
   };
 
-  const handlePlaceOrder = async () => {
-    setIsProcessing(true);
-    // Simular procesamiento del pago
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    // Generar datos de la orden
-    const fakeOrderNumber = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    setOrderData({
-      orderNumber: fakeOrderNumber,
-      items: cartItems,
-      total,
-      shippingInfo,
-      paymentMethod,
-      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    });
-    clearCart();
-    setIsProcessing(false);
-    setCartOpen(false);
-  };
-
-  // Mostrar pantalla de confirmación si hay orderData
-  if (orderData) {
-    return <OrderConfirmation orderData={orderData} />;
-  }
-
   const steps = [
     { id: 1, title: 'Envío', icon: <Truck className="h-5 w-5" /> },
-    { id: 2, title: 'Pago', icon: <CreditCard className="h-5 w-5" /> },
-    { id: 3, title: 'Confirmación', icon: <Shield className="h-5 w-5" /> },
+    { id: 2, title: 'Confirmación', icon: <Shield className="h-5 w-5" /> },
+    { id: 3, title: 'Pago', icon: <CreditCard className="h-5 w-5" /> },
   ];
 
   return (
@@ -331,7 +335,39 @@ export const CheckoutPage: React.FC = () => {
                     </div>
                   </div>
 
-                  
+                  {/* Documento de Identidad */}
+                  <div className="grid grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tipo de Documento *
+                      </label>
+                      <select
+                        name="identityType"
+                        value={shippingInfo.identityType || 'DNI'}
+                        onChange={handleShippingChange}
+                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        required
+                      >
+                        <option value="DNI">DNI</option>
+                        <option value="CE">Carné de Extranjería</option>
+                        <option value="PS">Pasaporte</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Número de Documento *
+                      </label>
+                      <input
+                        type="text"
+                        name="identityCode"
+                        value={shippingInfo.identityCode || ''}
+                        onChange={handleShippingChange}
+                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        placeholder="Número de documento"
+                        required
+                      />
+                    </div>
+                  </div>
                 </form>
 
                 <div className="mt-8 flex justify-end">
@@ -346,152 +382,8 @@ export const CheckoutPage: React.FC = () => {
               </div>
             )}
 
-            {/* Step 2: Payment Information */}
+            {/* Step 2: Confirmación */}
             {currentStep === 2 && (
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
-                  <CreditCard className="h-5 w-5 mr-2" />
-                  Método de Pago
-                </h2>
-
-                {/* Payment Method Selection */}
-                <div className="mb-6">
-                  <div className="grid grid-cols-2 md:grid-cols- gap-4">
-                    <button
-                      onClick={() => setPaymentMethod('card')}
-                      className={`p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'card' 
-                          ? 'border-blue-600 bg-blue-50' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <CreditCard className="h-6 w-6 mx-auto mb-2 text-gray-600" />
-                      <span className="text-sm font-medium">Tarjeta</span>
-                    </button>
-
-                    <button
-                      onClick={() => setPaymentMethod('paypal')}
-                      className={`p-4 border-2 rounded-lg transition-colors ${
-                        paymentMethod === 'paypal' 
-                          ? 'border-blue-600 bg-blue-50' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      <div className="h-6 w-6 mx-auto mb-2 bg-blue-600 rounded text-white text-xs flex items-center justify-center font-bold">
-                        P
-                      </div>
-                      <span className="text-sm font-medium">PayPal</span>
-                    </button>
-
-                   
-                  </div>
-                </div>
-
-                {/* Card Payment Form */}
-                {paymentMethod === 'card' && (
-                  <form className="space-y-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Número de Tarjeta *
-                      </label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type="text"
-                          name="cardNumber"
-                          value={paymentInfo.cardNumber}
-                          onChange={handlePaymentChange}
-                          className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="1234 5678 9012 3456"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-6">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Fecha de Vencimiento *
-                        </label>
-                        <input
-                          type="text"
-                          name="expiryDate"
-                          value={paymentInfo.expiryDate}
-                          onChange={handlePaymentChange}
-                          className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="MM/AA"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          CVV *
-                        </label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                          <input
-                            type="text"
-                            name="cvv"
-                            value={paymentInfo.cvv}
-                            onChange={handlePaymentChange}
-                            className="w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="123"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre en la Tarjeta *
-                      </label>
-                      <input
-                        type="text"
-                        name="cardName"
-                        value={paymentInfo.cardName}
-                        onChange={handlePaymentChange}
-                        className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="Nombre como aparece en la tarjeta"
-                      />
-                    </div>
-                  </form>
-                )}
-
-                {/* PayPal */}
-                {paymentMethod === 'paypal' && (
-                  <div className="text-center py-8">
-                    <div className="bg-blue-50 rounded-lg p-6">
-                      <div className="text-blue-600 text-lg font-semibold mb-2">
-                        Pago con PayPal
-                      </div>
-                      <p className="text-gray-600">
-                        Serás redirigido a PayPal para completar el pago de forma segura.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-               
-
-                <div className="mt-8 flex justify-between">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep(1)}
-                  >
-                    Volver
-                  </Button>
-                  <Button
-                    onClick={handleNextStep}
-                    disabled={!validateStep2()}
-                    className="px-8"
-                  >
-                    Revisar Pedido
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Order Confirmation */}
-            {currentStep === 3 && (
               <div className="bg-white rounded-xl shadow-md p-6">
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <Shield className="h-5 w-5 mr-2" />
@@ -506,6 +398,7 @@ export const CheckoutPage: React.FC = () => {
                     <p>{shippingInfo.address}</p>
                     <p>{shippingInfo.city}, {shippingInfo.state} {shippingInfo.zipCode}</p>
                     <p>{shippingInfo.country}</p>
+                    <p><strong>Documento:</strong> {shippingInfo.identityType} {shippingInfo.identityCode}</p>
                     <p className="mt-2">
                       <strong>Email:</strong> {shippingInfo.email}<br />
                       <strong>Teléfono:</strong> {shippingInfo.phone}
@@ -513,14 +406,14 @@ export const CheckoutPage: React.FC = () => {
                   </div>
                 </div>
 
-              
-
                 {/* Terms */}
                 <div className="mb-6">
                   <label className="flex items-start">
                     <input
                       type="checkbox"
                       className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      checked={!!shippingInfo.reference}
+                      onChange={e => setShippingInfo(prev => ({ ...prev, reference: e.target.checked ? 'aceptado' : '' }))}
                     />
                     <span className="ml-2 text-sm text-gray-600">
                       Acepto los <a href="#" className="text-blue-600 hover:underline">términos y condiciones</a> y la <a href="#" className="text-blue-600 hover:underline">política de privacidad</a>
@@ -531,18 +424,49 @@ export const CheckoutPage: React.FC = () => {
                 <div className="flex justify-between">
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(1)}
                   >
                     Volver
                   </Button>
                   <Button
-                    onClick={handlePlaceOrder}
-                    disabled={isProcessing}
+                    onClick={() => setCurrentStep(3)}
+                    disabled={!shippingInfo.reference}
                     className="px-8"
                   >
-                    {isProcessing ? 'Procesando...' : `Realizar Pedido - ${formatPrice(total)}`}
+                    Ir a Pagar
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {/* Step 3: Pago (Izipay) */}
+            {currentStep === 3 && (
+              <div className="bg-white rounded-xl shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                  <CreditCard className="h-5 w-5 mr-2" />
+                  Pago Seguro con Izipay
+                </h2>
+                {izipayError && <div className="text-red-500 mb-4">{izipayError}</div>}
+                {!izipayToken ? (
+                  <div className="text-gray-600">Cargando pasarela de pago...</div>
+                ) : (
+                  <IzipayCheckout
+                    formToken={izipayToken.formToken}
+                    publicKey={izipayToken.publicKey}
+                    config={izipayToken.config}
+                    onPaymentSuccess={(paymentResult) => {
+                      const orderId = paymentResult.orderId || paymentResult.order_id || paymentResult.id;
+                      clearCart();
+                      setCartOpen(false);
+                      if (orderId) {
+                        navigate(`/order/${orderId}`);
+                      } else {
+                        alert('No se pudo obtener el número de pedido.');
+                      }
+                    }}
+                    onPaymentError={err => setIzipayError(typeof err === 'string' ? err : (err as any)?.message || 'Error en el pago')}
+                  />
+                )}
               </div>
             )}
           </div>
@@ -557,14 +481,12 @@ export const CheckoutPage: React.FC = () => {
               {/* Cart Items */}
               <div className="space-y-4 mb-6">
                 {cartItems.map((item) => {
-                  const size = item.product.sizes.find(s => s.id === item.sizeId);
-                  const color = item.product.colors.find(c => c.id === item.colorId);
-                  
                   return (
-                    <div key={item.id} className="flex items-center space-x-3">
+                    <div key={item.product._id + '-' + item.size + '-' + item.color} className="flex items-center space-x-3">
                       <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
                         <img
-                          src={getImageUrl(item.product.images[0])}
+                          src={getImageUrl(item.product.images[0] || '')}
+                          
                           alt={item.product.name}
                           className="w-full h-full object-cover"
                         />
@@ -574,11 +496,11 @@ export const CheckoutPage: React.FC = () => {
                           {item.product.name}
                         </h4>
                         <div className="text-xs text-gray-500">
-                          {size?.name} • {color?.name} • Qty: {item.quantity}
+                          {item.size} • {item.color} • Qty: {item.quantity}
                         </div>
                       </div>
                       <div className="text-sm font-medium text-gray-900">
-                        {formatPrice(item.unitPrice * item.quantity)}
+                        {formatPrice(item.product.price * item.quantity)}
                       </div>
                     </div>
                   );
@@ -596,10 +518,6 @@ export const CheckoutPage: React.FC = () => {
                   <span className="text-gray-900">
                     {shipping === 0 ? 'Gratis' : formatPrice(shipping)}
                   </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">IVA (21%)</span>
-                  <span className="text-gray-900">{formatPrice(tax)}</span>
                 </div>
                 <div className="border-t border-gray-200 pt-2">
                   <div className="flex justify-between text-lg font-semibold">

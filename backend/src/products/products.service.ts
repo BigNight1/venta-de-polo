@@ -36,4 +36,24 @@ export class ProductsService {
     const result = await this.productModel.findByIdAndDelete(id).exec();
     if (!result) throw new NotFoundException('Producto no encontrado');
   }
+
+  async decrementVariantStock(productId: string, size: string, color: string, quantity: number): Promise<void> {
+    const product = await this.productModel.findById(productId);
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    const variant = product.variants.find((v: any) =>
+      v.size.toLowerCase() === size.toLowerCase() &&
+      v.color.toLowerCase() === color.toLowerCase()
+    );
+    if (!variant) {
+      console.error(`Variante no encontrada para producto ${productId} - size: ${size}, color: ${color}`);
+      throw new NotFoundException('Variante no encontrada');
+    }
+    if (variant.stock < quantity) {
+      console.error(`Stock insuficiente para producto ${productId} - variante size: ${size}, color: ${color}`);
+      throw new Error('Stock insuficiente');
+    }
+    variant.stock -= quantity;
+    await product.save();
+    console.log(`Stock actualizado para producto ${productId} - variante size: ${size}, color: ${color}. Nuevo stock: ${variant.stock}`);
+  }
 } 
