@@ -104,28 +104,47 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
             return;
           }
           const configWithContainer = { ...config, container: 'iframe-payment' };
-          console.log('[FRONTEND] Inicializando widget con config:', configWithContainer);
-          checkoutInstance = new window.Izipay({ config: configWithContainer });
-          
-          // 4. Mostrar el formulario
-          console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
-          
-          checkoutInstance.LoadForm({
-            authorization: formToken,
-            keyRSA: publicKey,
-            callbackResponse: (response: any) => {
-              console.log('[FRONTEND] Respuesta widget Izipay:', response);
-              if (!isMounted) return;
-              if (response.status === 'SUCCESS') {
-                onPaymentSuccess(response);
-              } else {
-                const errorMsg = response.errorMessage || response.messageUser || response.message || 'Pago rechazado o cancelado';
-                console.error('[FRONTEND] Error en pago:', errorMsg);
-                setError(errorMsg);
-                onPaymentError(errorMsg);
-              }
+          // Verificar si el div existe en el DOM
+          const containerDiv = document.getElementById('iframe-payment');
+          console.log('[FRONTEND] ¿Existe el div #iframe-payment en el DOM?', !!containerDiv);
+          if (!containerDiv) {
+            setError('Error: No se encontró el contenedor para el pago (iframe-payment)');
+            onPaymentError('No se encontró el contenedor para el pago (iframe-payment)');
+            setIsLoading(false);
+            return;
+          }
+          // Pequeño delay para asegurar que el DOM esté listo
+          setTimeout(() => {
+            try {
+              checkoutInstance = new window.Izipay({ config: configWithContainer });
+              // 4. Mostrar el formulario
+              console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
+              checkoutInstance.LoadForm({
+                authorization: formToken,
+                keyRSA: publicKey,
+                callbackResponse: (response: any) => {
+                  console.log('[FRONTEND] Respuesta widget Izipay:', response);
+                  if (!isMounted) return;
+                  if (response.status === 'SUCCESS') {
+                    onPaymentSuccess(response);
+                  } else {
+                    const errorMsg = response.errorMessage || response.messageUser || response.message || 'Pago rechazado o cancelado';
+                    console.error('[FRONTEND] Error en pago:', errorMsg);
+                    setError(errorMsg);
+                    onPaymentError(errorMsg);
+                  }
+                }
+              });
+            } catch (err) {
+              let msg = 'Error inesperado';
+              if (err instanceof Error) msg = err.message;
+              else if (typeof err === 'string') msg = err;
+              console.error('[FRONTEND] Error al inicializar Izipay:', err);
+              setError(msg);
+              onPaymentError(msg);
             }
-          });
+            setIsLoading(false);
+          }, 100);
         } catch (err) {
           let msg = 'Error inesperado';
           if (err instanceof Error) msg = err.message;

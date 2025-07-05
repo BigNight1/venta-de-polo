@@ -201,6 +201,8 @@ export class IzipayService {
    * Devuelve la configuración de sesión para el widget de Izipay usando datos reales y el formToken real
    */
   async getSessionConfig(orderId: string, orderData: any) {
+    console.log('[BACKEND][getSessionConfig] orderId recibido:', orderId);
+    console.log('[BACKEND][getSessionConfig] orderData recibido:', orderData);
     // Llama a createFormToken para obtener el formToken real
     const paymentData = {
       orderId,
@@ -250,6 +252,8 @@ export class IzipayService {
       },
       container: 'iframe-payment',
     };
-    return { token: formToken, keyRSA: publicKey, config };
+    const responseObj = { token: formToken, keyRSA: publicKey, config };
+    console.log('[BACKEND][getSessionConfig] Respuesta enviada al frontend:', responseObj);
+    return responseObj;
   }
 } 
