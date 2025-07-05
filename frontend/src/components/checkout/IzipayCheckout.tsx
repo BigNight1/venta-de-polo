@@ -36,8 +36,8 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
         return;
       }
       const script = document.createElement('script');
-      // script.src = 'https://checkout.izipay.pe/payments/v1/js/index.js'; // Usa sandbox-checkout.izipay.pe para pruebas
-      script.src = 'https://sandbox-checkout.izipay.pe/payments/v1/js/index.js'; // URL de TEST
+      // script.src = 'https://checkout.izipay.pe/payments/v1/js/index.js?mode=embedded&container=iframe-payment'; // Usa Produccion
+      script.src = 'https://sandbox-checkout.izipay.pe/payments/v1/js/index.js?mode=embedded&container=iframe-payment'; // URL de TEST
       script.id = 'izipay-sdk';
       script.async = true;
       script.defer = true;
