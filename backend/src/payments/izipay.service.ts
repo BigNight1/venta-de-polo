@@ -203,25 +203,8 @@ export class IzipayService {
   async getSessionConfig(orderId: string, orderData: any) {
     console.log('[BACKEND][getSessionConfig] orderId recibido:', orderId);
     console.log('[BACKEND][getSessionConfig] orderData recibido:', orderData);
-    // Llama a createFormToken para obtener el formToken real
-    const paymentData = {
-      orderId,
-      amount: orderData?.amount || 1,
-      currency: orderData?.currency || 'PEN',
-      firstName: orderData?.firstName || '',
-      lastName: orderData?.lastName || '',
-      email: orderData?.email || '',
-      phoneNumber: orderData?.phoneNumber || '',
-      identityType: orderData?.identityType || 'DNI',
-      identityCode: orderData?.identityCode || '',
-      address: orderData?.address || '',
-      country: orderData?.country || 'PE',
-      state: orderData?.state || '',
-      city: orderData?.city || '',
-      zipCode: orderData?.zipCode || '',
-      items: orderData?.items || [],
-    };
-    const { formToken, publicKey } = await this.createFormToken(paymentData);
+    // Llama a la API de Session Token de Izipay (sandbox)
+    const sessionTokenEndpoint = 'https://sandbox-api-pw.izipay.pe/api/v1/Form/SessionToken';
     const merchantCode = this.merchantId || 'DEMO_MERCHANT';
     const now = new Date();
     const dateTimeTransaction = now.getTime().toString();
@@ -250,8 +233,38 @@ export class IzipayService {
         documentType: orderData?.identityType || 'DNI',
         document: orderData?.identityCode || '',
       },
-      container: 'iframe-payment',
+      payMethod: 'CARD,QR,YAPE_CODE',
+      render: {
+        typeForm: 'embedded',
+        container: 'iframe-payment',
+        showButtonProcessForm: true
+      },
+      // appearance: { customTheme: { ... } } // Opcional
     };
+    // Llama a la API de Session Token
+    const sessionTokenBody = {
+      transactionId: config.transactionId,
+      orderNumber: config.order.orderNumber,
+      amount: config.order.amount,
+      currency: config.order.currency,
+      merchantCode: config.merchantCode,
+      // Puedes agregar más campos si la API lo requiere
+    };
+    const response = await fetch(sessionTokenEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${Buffer.from(`${this.user}:${this.password}`).toString('base64')}`,
+      },
+      body: JSON.stringify(sessionTokenBody),
+    });
+    const data = await response.json();
+    if (!data.token) {
+      throw new Error(`[IZIPAY] Error al obtener session token: ${JSON.stringify(data)}`);
+    }
+    const formToken = data.token;
+    // Usa la clave pública configurada
+    const publicKey = this.publicKey;
     const responseObj = { token: formToken, keyRSA: publicKey, config };
     console.log('[BACKEND][getSessionConfig] Respuesta enviada al frontend:', responseObj);
     return responseObj;
