@@ -55,7 +55,6 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
 
     // LOGS PARA DEBUGGING - Verificar datos recibidos
     console.log('[FRONTEND] IzipayCheckout - Datos recibidos:');
-    console.log('[FRONTEND] formToken:', formToken);
     console.log('[FRONTEND] publicKey:', publicKey);
     console.log('[FRONTEND] config:', config);
     console.log('[FRONTEND] URL actual:', window.location.href);
@@ -96,12 +95,19 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
         // 3. Instanciar el widget con manejo de errores
         try {
           // Asegurarse que config tenga el container correcto
+          if (!config || !config.transactionId) {
+            const errorMsg = '[FRONTEND] Error: El objeto config no contiene transactionId. Config recibido:';
+            console.error(errorMsg, config);
+            setError('Error: Faltan datos para el pago (transactionId)');
+            onPaymentError('Falta transactionId en la configuración de pago.');
+            setIsLoading(false);
+            return;
+          }
           const configWithContainer = { ...config, container: 'iframe-payment' };
           console.log('[FRONTEND] Inicializando widget con config:', configWithContainer);
           checkoutInstance = new window.Izipay({ config: configWithContainer });
           
           // 4. Mostrar el formulario
-          console.log('[FRONTEND] Cargando formulario con token:', formToken);
           console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
           
           checkoutInstance.LoadForm({
