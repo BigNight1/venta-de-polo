@@ -252,7 +252,8 @@ export class IzipayService {
         postalCode: orderData?.zipCode || '',
         documentType: orderData?.identityType || 'DNI',
         document: orderData?.identityCode || '',
-      }
+      },
+      container: 'iframe-payment',
     };
     return { token: formToken, keyRSA: publicKey, config };
   }

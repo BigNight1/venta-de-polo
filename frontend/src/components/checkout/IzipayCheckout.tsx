@@ -93,30 +93,41 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
         
         console.log('[FRONTEND] SDK de Izipay disponible:', !!window.Izipay);
         
-        // 3. Instanciar el widget con orderId y environment por separado
-        console.log('[FRONTEND] Inicializando widget con config:', config);
-        checkoutInstance = new window.Izipay({ config });
-        
-        // 4. Mostrar el formulario
-        console.log('[FRONTEND] Cargando formulario con token:', formToken);
-        console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
-        
-        checkoutInstance.LoadForm({
-          authorization: formToken,
-          keyRSA: publicKey,
-          callbackResponse: (response: any) => {
-            console.log('[FRONTEND] Respuesta widget Izipay:', response);
-            if (!isMounted) return;
-            if (response.status === 'SUCCESS') {
-              onPaymentSuccess(response);
-            } else {
-              const errorMsg = response.errorMessage || 'Pago rechazado o cancelado';
-              console.error('[FRONTEND] Error en pago:', errorMsg);
-              setError(errorMsg);
-              onPaymentError(errorMsg);
+        // 3. Instanciar el widget con manejo de errores
+        try {
+          // Asegurarse que config tenga el container correcto
+          const configWithContainer = { ...config, container: 'iframe-payment' };
+          console.log('[FRONTEND] Inicializando widget con config:', configWithContainer);
+          checkoutInstance = new window.Izipay({ config: configWithContainer });
+          
+          // 4. Mostrar el formulario
+          console.log('[FRONTEND] Cargando formulario con token:', formToken);
+          console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
+          
+          checkoutInstance.LoadForm({
+            authorization: formToken,
+            keyRSA: publicKey,
+            callbackResponse: (response: any) => {
+              console.log('[FRONTEND] Respuesta widget Izipay:', response);
+              if (!isMounted) return;
+              if (response.status === 'SUCCESS') {
+                onPaymentSuccess(response);
+              } else {
+                const errorMsg = response.errorMessage || response.messageUser || response.message || 'Pago rechazado o cancelado';
+                console.error('[FRONTEND] Error en pago:', errorMsg);
+                setError(errorMsg);
+                onPaymentError(errorMsg);
+              }
             }
-          }
-        });
+          });
+        } catch (err) {
+          let msg = 'Error inesperado';
+          if (err instanceof Error) msg = err.message;
+          else if (typeof err === 'string') msg = err;
+          console.error('[FRONTEND] Error al inicializar Izipay:', err);
+          setError(msg);
+          onPaymentError(msg);
+        }
         setIsLoading(false);
       })
       .catch(err => {
@@ -145,8 +156,8 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">{error}</div>
         )}
-        {/* El widget de Izipay se mostrará automáticamente en un modal o en el body, según el SDK */}
-        <div ref={izipayRef} />
+        {/* El widget de Izipay se mostrará aquí */}
+        <div id="iframe-payment" ref={izipayRef} />
       </div>
     </div>
   );
