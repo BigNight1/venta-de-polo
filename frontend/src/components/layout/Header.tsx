@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, ShoppingBag, LogOut } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCombobox } from 'downshift';
 import { useProducts } from '../../context/ProductContext';
 import { getImageUrl } from '../../lib/getImageUrl';
+import { useAuth } from '../../context/FirebaseAuthContext';
 
 export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,6 +23,7 @@ export const Header: React.FC = () => {
     getCartItemsCount,
   } = useStore();
   const { products } = useProducts();
+  const { user: firebaseUser, loginWithGoogle, logout } = useAuth();
 
   const navigationItems = [
     { id: '/', label: 'Inicio' },
@@ -58,7 +61,6 @@ export const Header: React.FC = () => {
     getInputProps,
     getItemProps,
     highlightedIndex,
-    selectItem,
   } = useCombobox({
     items,
     inputValue: searchQuery,
@@ -71,7 +73,11 @@ export const Header: React.FC = () => {
       }
     },
   });
-  console.log(products)
+
+  const handleMyOrders = () => {
+    navigate('/MisPedidos');
+    setShowDropdown(false);
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
@@ -165,37 +171,57 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* User Menu */}
-            <div className="relative">
+            {/* Firebase Auth User Dropdown */}
+            {firebaseUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setShowDropdown(!showDropdown)}
+                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"
+                >
+                  <img
+                    src={firebaseUser.photoURL || ''}
+                    alt={firebaseUser.displayName || ''}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-100"
+                  />
+                  <div className="text-left hidden md:block">
+                    <p className="text-sm font-semibold text-gray-800">{firebaseUser.displayName}</p>
+                    <p className="text-xs text-gray-600">En línea</p>
+                  </div>
+                </button>
+                {showDropdown && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center space-x-3">
+                      
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">{firebaseUser.displayName}</p>
+                        <p className="text-xs text-gray-600">{firebaseUser.email}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleMyOrders}
+                      className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <ShoppingBag className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm text-gray-700">Mis Pedidos</span>
+                    </button>
+                    <button
+                      onClick={logout}
+                      className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-t border-gray-100"
+                    >
+                      <LogOut className="w-5 h-5 text-red-600" />
+                      <span className="text-sm text-red-700">Cerrar Sesión</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
               <button
-                onClick={() => user ? setIsUserMenuOpen(!isUserMenuOpen) : setAuthModalOpen(true)}
+                onClick={() => setAuthModalOpen(true)}
                 className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 flex items-center space-x-2"
               >
                 <User className="h-6 w-6" />
-                {user && (
-                  <span className="hidden md:block text-sm font-medium">
-                    {user.fullName.split(' ')[0]}
-                  </span>
-                )}
               </button>
-
-              {/* User Dropdown */}
-              {user && isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
-                    <p className="text-sm font-medium text-gray-900">{user.fullName}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
-                  </div>
-                  <Link
-                    to="/orders"
-                    onClick={() => setIsUserMenuOpen(false)}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors block"
-                  >
-                    Mis Pedidos
-                  </Link>
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Mobile Menu Button */}
             <button

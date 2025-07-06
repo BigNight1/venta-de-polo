@@ -17,7 +17,6 @@ export class SeedService implements OnModuleInit {
   private async seedAdminUser() {
     try {
       await this.usersService.createAdminUser();
-      console.log('✅ Usuario admin creado exitosamente');
     } catch (error) {
       console.log('ℹ️ Usuario admin ya existe o error:', error.message);
     }

@@ -30,7 +30,7 @@ function AppContent() {
           <Route path="/" element={<ProductGrid />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/order" element={<MyOrders />} />
+          <Route path="/MisPedidos" element={<MyOrders />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order/:orderId" element={<OrderConfirmation />} />
           <Route path="/admin/*" element={<AdminRoute />} />

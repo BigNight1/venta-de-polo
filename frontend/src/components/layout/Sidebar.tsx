@@ -46,7 +46,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   };
 
   const handleColorChange = (colorId: string) => {
-    console.log('Color seleccionado:', colorId);
     setFilters({ color: filters.color === colorId ? '' : colorId });
   };
 

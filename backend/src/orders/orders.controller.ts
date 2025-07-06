@@ -36,4 +36,9 @@ export class OrdersController {
     }
     return order;
   }
+
+  @Get('user/:uid')
+  async getOrdersByUser(@Param('uid') uid: string) {
+    return this.ordersService.findByFirebaseUid(uid);
+  }
 } 

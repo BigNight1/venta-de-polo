@@ -74,6 +74,20 @@ export class Order extends Document {
 
   @Prop()
   trackingNumber?: string;
+
+  @Prop({
+    type: {
+      uid: String,
+      email: String,
+      displayName: String,
+    },
+    required: false,
+  })
+  firebaseUser?: {
+    uid: string;
+    email: string;
+    displayName: string;
+  };
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order); 

@@ -17,6 +17,7 @@ import { Button } from "../ui/Button";
 import { getImageUrl } from "../../lib/getImageUrl";
 import { useNavigate } from "react-router-dom";
 import { IzipayCheckout } from "./IzipayCheckout";
+import { useAuth } from '../../context/FirebaseAuthContext';
 
 interface ShippingInfo {
   firstName: string;
@@ -38,6 +39,7 @@ export const CheckoutPage: React.FC = () => {
   const { cartItems, getCartTotal, clearCart, setCartOpen } = useStore();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
+  const { user: firebaseUser } = useAuth();
 
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: "",
@@ -80,6 +82,11 @@ export const CheckoutPage: React.FC = () => {
         identityCode: shippingInfo.identityCode || "",
         reference: shippingInfo.identityCode || "",
         items: cartItems,
+        firebaseUser: firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        } : undefined,
       };
       fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/formtoken`, {
         method: "POST",
@@ -101,7 +108,7 @@ export const CheckoutPage: React.FC = () => {
         })
         .catch(() => setIzipayError("No se pudo obtener la pasarela de pago."));
     }
-  }, [currentStep, total, shippingInfo, cartItems]);
+  }, [currentStep, total, shippingInfo, cartItems, firebaseUser]);
 
   useEffect(() => {
     if (currentStep === 3) {
@@ -123,8 +130,12 @@ export const CheckoutPage: React.FC = () => {
         identityCode: shippingInfo.identityCode || "",
         amount: total,
         currency: "PEN",
+        firebaseUser: firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+        } : undefined,
       };
-      // LOGS PARA DEBUGGING - Verificar datos enviados al backend
 
       fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/session`, {
         method: "POST",
@@ -160,7 +171,7 @@ export const CheckoutPage: React.FC = () => {
           setIzipayError("No se pudo obtener la pasarela de pago.");
         });
     }
-  }, [currentStep, total, shippingInfo]);
+  }, [currentStep, total, shippingInfo, firebaseUser]);
 
   const handleShippingChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -638,17 +649,57 @@ export const CheckoutPage: React.FC = () => {
                     formToken={izipayToken.formToken}
                     publicKey={izipayToken.publicKey}
                     onPaymentSuccess={(paymentResult) => {
-                      const orderId =
-                        paymentResult.orderId ||
-                        paymentResult.order_id ||
-                        paymentResult.id;
-                      clearCart();
-                      setCartOpen(false);
-                      if (orderId) {
-                        navigate(`/order/${orderId}`);
-                      } else {
-                        alert("No se pudo obtener el número de pedido.");
-                      }
+                      const orderId = paymentResult.orderId || paymentResult.order_id || paymentResult.id;
+                      const orderPayload = {
+                        orderId,
+                        user: {
+                          name: shippingInfo.firstName + ' ' + shippingInfo.lastName,
+                          email: shippingInfo.email,
+                          phone: shippingInfo.phone,
+                        },
+                        shipping: {
+                          address: shippingInfo.address,
+                          city: shippingInfo.city,
+                          state: shippingInfo.state,
+                          zipCode: shippingInfo.zipCode,
+                          country: shippingInfo.country,
+                          identityType: shippingInfo.identityType,
+                          identityCode: shippingInfo.identityCode,
+                        },
+                        items: cartItems,
+                        total,
+                        subtotal,
+                        shippingCost: shipping,
+                        payment: {
+                          method: "izipay",
+                          status: "pagado",
+                        },
+                        status: "pending",
+                        estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // ejemplo: 3 días después
+                        firebaseUser: firebaseUser ? {
+                          uid: firebaseUser.uid,
+                          email: firebaseUser.email,
+                          displayName: firebaseUser.displayName,
+                        } : undefined,
+                      };
+                      fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderPayload),
+                      })
+                      .then(res => res.json())
+                      .then(() => {
+                        clearCart();
+                        setCartOpen(false);
+                        if (orderId) {
+                          navigate(`/order/${orderId}`);
+                        } else {
+                          alert("No se pudo obtener el número de pedido.");
+                        }
+                      })
+                      .catch(() => {
+                        alert('Ocurrió un error al guardar el pedido.');
+                      });
                     }}
                     onPaymentError={(err) =>
                       setIzipayError(

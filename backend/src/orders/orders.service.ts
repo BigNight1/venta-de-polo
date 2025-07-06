@@ -79,4 +79,22 @@ export class OrdersService {
       { new: true }
     );
   }
+
+  async findByFirebaseUid(uid: string): Promise<Order[]> {
+    const orders = await this.orderModel.find({ 'firebaseUser.uid': uid }).sort({ createdAt: -1 }).exec();
+    return Promise.all(orders.map(async (order: any) => {
+      order.items = await Promise.all((order.items || []).map(async (item: any) => {
+        if (item.productId) {
+          try {
+            const product = await this.productsService.findOne(item.productId);
+            return { ...item, product };
+          } catch {
+            return { ...item, product: null };
+          }
+        }
+        return item;
+      }));
+      return order;
+    }));
+  }
 } 

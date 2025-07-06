@@ -6,9 +6,12 @@ import { Button } from '../ui/Button';
 import { getImageUrl } from '../../lib/getImageUrl';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../../context/FirebaseAuthContext';
 
 export const OrderConfirmation: React.FC = () => {
     const { orderId } = useParams();
+    const { user: firebaseUser } = useAuth();
+    const { cartItems } = useStore();
     const [orderData, setOrderData] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -16,6 +19,7 @@ export const OrderConfirmation: React.FC = () => {
 
     useEffect(() => {
         if (!orderId) return;
+        // Ya no guardar el pedido aquí
         setLoading(true);
         axios.get(`${import.meta.env.VITE_API_URL}/orders/${orderId}`)
             .then(res => {
@@ -66,7 +70,6 @@ export const OrderConfirmation: React.FC = () => {
     const currentStatus = orderData.status;
     const currentStepIndex = trackingSteps.findIndex(s => s.key === currentStatus);
 
-    console.log(orderData);
     return (
         <div className="min-h-screen bg-gray-50 relative overflow-hidden">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

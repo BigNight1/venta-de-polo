@@ -10,7 +10,6 @@ async function bootstrap() {
 
   // Servir archivos estáticos
   const staticPath = join(__dirname, '..', "..", 'public');
-  // console.log('Sirviendo archivos estáticos desde:', staticPath);
   app.useStaticAssets(staticPath);
 
 
