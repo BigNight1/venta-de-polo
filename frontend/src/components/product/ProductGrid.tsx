@@ -10,6 +10,7 @@ export const ProductGrid: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { filters } = useStore();
   const { products, loading, error } = useProducts();
+  const [sortOption, setSortOption] = useState('name'); // 'name', 'price-low', 'price-high', 'newest'
 
   // Filter products based on current filters
   const filteredProducts = useMemo(() => {
@@ -51,6 +52,21 @@ export const ProductGrid: React.FC = () => {
       return true;
     });
   }, [filters, products]);
+
+  // Ordenar productos según sortOption
+  const sortedProducts = useMemo(() => {
+    const arr = [...filteredProducts];
+    if (sortOption === 'price-low') {
+      arr.sort((a, b) => a.price - b.price);
+    } else if (sortOption === 'price-high') {
+      arr.sort((a, b) => b.price - a.price);
+    } else if (sortOption === 'newest') {
+      arr.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } else if (sortOption === 'name') {
+      arr.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return arr;
+  }, [filteredProducts, sortOption]);
 
   const getCategoryLabel = (category: string) => {
     const labels: Record<string, string> = {
@@ -99,7 +115,11 @@ export const ProductGrid: React.FC = () => {
               </p>
 
               {/* Sort Options */}
-              <select className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <select
+                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                value={sortOption}
+                onChange={e => setSortOption(e.target.value)}
+              >
                 <option value="name">Ordenar por nombre</option>
                 <option value="price-low">Precio: menor a mayor</option>
                 <option value="price-high">Precio: mayor a menor</option>
@@ -135,9 +155,9 @@ export const ProductGrid: React.FC = () => {
           </div>
 
           {/* Products Grid */}
-          {filteredProducts.length > 0 ? (
+          {sortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+              {sortedProducts.map((product) => (
                 <ProductCard key={product._id} product={product} />
               ))}
             </div>

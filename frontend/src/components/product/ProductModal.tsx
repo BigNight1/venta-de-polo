@@ -183,7 +183,7 @@ export const ProductModal: React.FC = () => {
         />
 
         {/* Modal */}
-        <div className="relative bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-hidden">
+        <div className="relative bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] overflow-y-auto h-screen sm:h-auto">
           {/* Close Button */}
           <button
             onClick={handleClose}

@@ -17,10 +17,10 @@ import { OrderConfirmation } from './components/checkout/OrderConfirmation';
 function AppContent() {
   const { selectedProduct } = useStore();
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/checkout');
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen  bg-gray-50 flex flex-col">
       {/* Header solo si no es admin */}
       {!isAdminRoute && <Header />}
 

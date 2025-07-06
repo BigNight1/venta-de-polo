@@ -64,6 +64,6 @@ export class ProductsService {
     }
     variant.stock -= quantity;
     await product.save();
-    console.log(`Stock actualizado para producto ${productId} - variante size: ${size}, color: ${color}. Nuevo stock: ${variant.stock}`);
+    
   }
 } 

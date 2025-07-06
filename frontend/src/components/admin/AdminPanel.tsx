@@ -49,12 +49,10 @@ export const AdminPanel: React.FC = () => {
     editingProduct,
     isEditing,
     isCreating,
-    formData,
     analytics,
     handleEdit,
     handleCreate,
     resetForm,
-    updateFormData,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -171,14 +169,6 @@ export const AdminPanel: React.FC = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    updateFormData({
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-              type === 'number' ? parseFloat(value) || 0 : value
-    });
-  };
-
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setImageUploadError('');
     setImageUploading(true);
@@ -253,12 +243,12 @@ export const AdminPanel: React.FC = () => {
   const renderOverview = () => (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white rounded-xl shadow-md p-6">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Productos</p>
-              <p className="text-3xl font-bold text-gray-900">{analytics.totalProducts}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{analytics.totalProducts}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
               <Package className="h-6 w-6 text-blue-600" />
@@ -270,7 +260,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">En Stock</p>
-              <p className="text-3xl font-bold text-green-600">{analytics.inStockProducts}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">{analytics.inStockProducts}</p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
               <CheckCircle className="h-6 w-6 text-green-600" />
@@ -282,7 +272,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Agotados</p>
-              <p className="text-3xl font-bold text-red-600">{analytics.outOfStockProducts}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-red-600">{analytics.outOfStockProducts}</p>
             </div>
             <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
               <AlertCircle className="h-6 w-6 text-red-600" />
@@ -294,7 +284,7 @@ export const AdminPanel: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Precio Promedio</p>
-              <p className="text-3xl font-bold text-purple-600">{formatPrice(analytics.averagePrice)}</p>
+              <p className="text-xl sm:text-2xl md:text-3xl font-bold text-purple-600">{formatPrice(analytics.averagePrice)}</p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -325,8 +315,8 @@ export const AdminPanel: React.FC = () => {
       {/* Recent Products */}
       <div className="bg-white rounded-xl shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Productos Recientes</h3>
-        <div className="space-y-3">
-          {products.slice(0, 5).map((product, index) => (
+        <div className="space-y-3 max-h-60 overflow-y-auto sm:max-h-none">
+          {products.slice().map((product, index) => (
             <div key={`recent-${product._id}-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <img
                 src={getImageUrl(product.images[0] || '')}
@@ -693,7 +683,7 @@ export const AdminPanel: React.FC = () => {
       {/* Header */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between  flex-col sm:flex-row">
             <h1 className="text-2xl font-bold text-gray-900">Panel Administrativo</h1>
             
             {/* Tab Navigation */}

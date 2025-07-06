@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
-  Download,
   Truck,
   CheckCircle,
   Clock,
@@ -249,10 +248,6 @@ export const OrdersPanel: React.FC = () => {
     await loadOrders();
   };
 
-  const handleExportOrders = () => {
-    // Simular exportación
-    alert('Exportando pedidos a CSV...');
-  };
 
   const getPaymentMethodLabel = (method: string) => {
     const methods = {
@@ -288,7 +283,7 @@ export const OrdersPanel: React.FC = () => {
     <div className="space-y-6">
       {/* Header con Estadísticas */}
       <div className="bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gestión de Pedidos</h1>
             <p className="text-gray-600">Administra y supervisa todos los pedidos de la tienda</p>
