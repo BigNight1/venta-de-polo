@@ -10,20 +10,18 @@ import { useAuth } from '../../context/FirebaseAuthContext';
 export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const {
-    user,
     setCartOpen,
     setAuthModalOpen,
     setFilters,
     getCartItemsCount,
   } = useStore();
   const { products } = useProducts();
-  const { user: firebaseUser, loginWithGoogle, logout } = useAuth();
+  const { user: firebaseUser, logout } = useAuth();
 
   const navigationItems = [
     { id: '/', label: 'Inicio' },

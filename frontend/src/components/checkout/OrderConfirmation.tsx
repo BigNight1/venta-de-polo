@@ -6,12 +6,10 @@ import { Button } from '../ui/Button';
 import { getImageUrl } from '../../lib/getImageUrl';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../../context/FirebaseAuthContext';
 
 export const OrderConfirmation: React.FC = () => {
     const { orderId } = useParams();
-    const { user: firebaseUser } = useAuth();
-    const { cartItems } = useStore();
+
     const [orderData, setOrderData] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
