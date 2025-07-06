@@ -66,6 +66,7 @@ export const OrderConfirmation: React.FC = () => {
     const currentStatus = orderData.status;
     const currentStepIndex = trackingSteps.findIndex(s => s.key === currentStatus);
 
+    console.log(orderData);
     return (
         <div className="min-h-screen bg-gray-50 relative overflow-hidden">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -75,10 +76,10 @@ export const OrderConfirmation: React.FC = () => {
                         <CheckCircle className="h-12 w-12 text-green-600" />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                        ¡Pedido Confirmado!
+                        Gracias por tu compra
                     </h1>
                     <p className="text-xl text-gray-600 mb-4">
-                        Gracias por tu compra. Tu pedido ha sido procesado exitosamente.
+                        Tu pedido ha sido procesado exitosamente.
                     </p>
                     <div className="inline-flex items-center bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium">
                         <Package className="h-4 w-4 mr-2" />

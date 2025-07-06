@@ -1,26 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-
-// Agregar declaración global para window.Izipay
-// @ts-ignore
-declare global {
-  interface Window {
-    Izipay?: any;
-  }
-}
+import KRGlue from '@lyracom/embedded-form-glue';
+import axios from 'axios';
 
 interface IzipayCheckoutProps {
   formToken: string;
   publicKey: string;
-  config: any;
   onPaymentSuccess: (paymentData: any) => void;
   onPaymentError: (error: string) => void;
 }
 
+// Agregar declaración para evitar errores de TypeScript
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare global { interface Window { KR?: any } }
+
 export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
   formToken,
   publicKey,
-  config,
   onPaymentSuccess,
   onPaymentError
 }) => {
@@ -28,164 +24,95 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
   const [error, setError] = useState('');
   const izipayRef = useRef<HTMLDivElement>(null);
 
-  // Cargar el script oficial de Izipay
-  const loadIzipayScript = () => {
-    return new Promise<void>((resolve, reject) => {
-      if (document.getElementById('izipay-sdk')) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      // script.src = 'https://checkout.izipay.pe/payments/v1/js/index.js?mode=embedded&container=iframe-payment'; // Usa Produccion
-      script.src = 'https://sandbox-checkout.izipay.pe/payments/v1/js/index.js?mode=embedded&container=iframe-payment'; // URL de TEST
-      script.id = 'izipay-sdk';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject('No se pudo cargar el SDK de Izipay');
-      document.head.appendChild(script);
-    });
-  };
-
   useEffect(() => {
-    let checkoutInstance: any = null;
     let isMounted = true;
     setIsLoading(true);
     setError('');
 
-    // LOGS PARA DEBUGGING - Verificar datos recibidos
-    console.log('[FRONTEND] IzipayCheckout - Datos recibidos:');
-    console.log('[FRONTEND] publicKey:', publicKey);
-    console.log('[FRONTEND] config:', config);
-    console.log('[FRONTEND] URL actual:', window.location.href);
-    console.log('[FRONTEND] Dominio:', window.location.origin);
+    // Limpiar el formulario anterior si existe
+    const removeForms = async () => {
+      if (window.KR && window.KR.removeForms) {
+        try { await window.KR.removeForms(); } catch {}
+      }
+    };
+    removeForms();
 
-    // Validar que el token no esté vacío
     if (!formToken || formToken === '') {
       const errorMsg = 'Error: formToken está vacío o no definido';
-      console.error('[FRONTEND]', errorMsg);
+      console.error('[FRONTEND][KRGlue]', errorMsg);
       setError(errorMsg);
       setIsLoading(false);
       onPaymentError(errorMsg);
       return;
     }
 
-    // Validar que el token no sea el fake token
-    if (formToken.includes('FAKE_TOKEN')) {
-      const errorMsg = 'Error: Se recibió un token fake del backend';
-      console.error('[FRONTEND]', errorMsg);
-      setError(errorMsg);
-      setIsLoading(false);
-      onPaymentError(errorMsg);
-      return;
-    }
+    // Endpoint de MiCuentaWeb/Krypton
+    const endpoint = 'https://static.micuentaweb.pe';
 
-    // 1. Cargar el script
-    loadIzipayScript()
-      .then(() => {
-        console.log('[FRONTEND] Script de Izipay cargado exitosamente');
-        
-        // 2. Verificar que el SDK esté disponible
-        if (!window.Izipay) {
-          throw new Error('SDK de Izipay no disponible después de cargar el script');
-        }
-        
-        console.log('[FRONTEND] SDK de Izipay disponible:', !!window.Izipay);
-        
-        // 3. Instanciar el widget con manejo de errores
-        try {
-          // Asegurarse que config tenga el container correcto
-          if (!config || !config.transactionId) {
-            const errorMsg = '[FRONTEND] Error: El objeto config no contiene transactionId. Config recibido:';
-            console.error(errorMsg, config);
-            setError('Error: Faltan datos para el pago (transactionId)');
-            onPaymentError('Falta transactionId en la configuración de pago.');
-            setIsLoading(false);
-            return;
-          }
-          const configWithContainer = { ...config, container: 'iframe-payment' };
-          // Verificar si el div existe en el DOM
-          const containerDiv = document.getElementById('iframe-payment');
-          console.log('[FRONTEND] ¿Existe el div #iframe-payment en el DOM?', !!containerDiv);
-          if (!containerDiv) {
-            setError('Error: No se encontró el contenedor para el pago (iframe-payment)');
-            onPaymentError('No se encontró el contenedor para el pago (iframe-payment)');
-            setIsLoading(false);
-            return;
-          }
-          // Pequeño delay para asegurar que el DOM esté listo
-          setTimeout(() => {
-            try {
-              checkoutInstance = new window.Izipay({ config: configWithContainer });
-              // 4. Mostrar el formulario
-              console.log('[FRONTEND] Cargando formulario con keyRSA:', publicKey);
-              checkoutInstance.LoadForm({
-                authorization: formToken,
-                keyRSA: publicKey,
-                callbackResponse: (response: any) => {
-                  console.log('[FRONTEND] Respuesta widget Izipay:', response);
-                  if (!isMounted) return;
-                  if (response.status === 'SUCCESS') {
-                    onPaymentSuccess(response);
-                  } else {
-                    const errorMsg = response.errorMessage || response.messageUser || response.message || 'Pago rechazado o cancelado';
-                    console.error('[FRONTEND] Error en pago:', errorMsg);
-                    setError(errorMsg);
-                    onPaymentError(errorMsg);
-                  }
-                }
-              });
-            } catch (err) {
-              let msg = 'Error inesperado';
-              if (err instanceof Error) msg = err.message;
-              else if (typeof err === 'string') msg = err;
-              console.error('[FRONTEND] Error al inicializar Izipay:', err);
-              setError(msg);
-              onPaymentError(msg);
-            }
-            setIsLoading(false);
-          }, 100);
-        } catch (err) {
-          let msg = 'Error inesperado';
-          if (err instanceof Error) msg = err.message;
-          else if (typeof err === 'string') msg = err;
-          console.error('[FRONTEND] Error al inicializar Izipay:', err);
-          setError(msg);
-          onPaymentError(msg);
-        }
-        setIsLoading(false);
-      })
-      .catch(err => {
-        const errorMsg = err.message || 'Error al inicializar el pago';
-        console.error('[FRONTEND] Error en IzipayCheckout:', err);
-        setError(errorMsg);
-        setIsLoading(false);
-        onPaymentError(errorMsg);
+    KRGlue.loadLibrary(endpoint, publicKey).then(({ KR }) => {
+      if (!isMounted) return;
+      KR.setFormConfig({
+        formToken: formToken,
+        'kr-language': 'es-ES',
       });
+      KR.renderElements('.kr-smart-form').then(({ KR, result }) => {
+        if (result && result.formId) {
+          KR.showForm(result.formId);
+        }
+      });
+      KR.onSubmit(async paymentData => {
+        if (!isMounted) return false;
+        try {
+          const res = await axios.post(`${import.meta.env.VITE_API_URL}/payments/izipay/validate`, {
+            'kr-answer': paymentData.clientAnswer,
+            'kr-hash': paymentData.hash,
+          });
+          if (res.data && res.data.success) {
+            onPaymentSuccess(res.data); // Usar la respuesta del backend (con orderId)
+          } else {
+            setError('Pago rechazado o validación fallida');
+            onPaymentError('Pago rechazado o validación fallida');
+          }
+        } catch (err) {
+          setError('Error al validar el pago');
+          onPaymentError('Error al validar el pago');
+        }
+        return false;
+      });
+      setIsLoading(false);
+    }).catch(err => {
+      const errorMsg = err.message || 'Error al inicializar el pago';
+      console.error('[FRONTEND][KRGlue] Error:', err);
+      setError(errorMsg);
+      setIsLoading(false);
+      onPaymentError(errorMsg);
+    });
     return () => {
       isMounted = false;
-      // Limpieza si el widget lo permite
+      // Limpiar formularios al desmontar
+      if (window.KR && window.KR.removeForms) {
+        try { window.KR.removeForms(); } catch {}
+      }
     };
-  }, [formToken, publicKey, config, onPaymentSuccess, onPaymentError]);
+  }, [formToken, publicKey, onPaymentSuccess, onPaymentError]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="max-w-xl w-full bg-white rounded-xl shadow-md p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Pago Seguro con Izipay</h2>
+    <div className="">
+      <div className="max-w-2xl w-full h-full bg-white rounded-xl shadow-md p-10 flex justify-center items-center" >
         {isLoading && (
-          <div className="flex flex-col items-center py-8">
-            <Loader2 className="h-8 w-8 text-blue-600 animate-spin mb-2" />
-            <span className="text-blue-800">Cargando formulario de pago...</span>
+          <div className="flex flex-col items-center py-12">
+            <Loader2 className="h-10 w-10 text-blue-600 animate-spin mb-4" />
+            <span className="text-blue-800 text-lg">Cargando formulario de pago...</span>
           </div>
         )}
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-700">{error}</div>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded text-red-700 text-base">{error}</div>
         )}
         {/* El widget de Izipay se mostrará aquí */}
-        <div id="iframe-payment" ref={izipayRef} />
+        <div id="micuentawebstd_rest_wrapper" ref={izipayRef} className="mb-4" />
+        <div className="kr-smart-form" />
       </div>
     </div>
   );
 };
 
-// Nota: Debes tener un endpoint en el backend que devuelva { token, keyRSA, config } para la orden. 

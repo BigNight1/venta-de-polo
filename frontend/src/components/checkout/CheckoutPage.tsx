@@ -40,19 +40,21 @@ export const CheckoutPage: React.FC = () => {
     country: 'Perú',
   });
 
-  const [izipayToken, setIzipayToken] = useState<{ formToken: string, publicKey: string, config: any } | null>(null);
+  const [izipayToken, setIzipayToken] = useState<{ formToken: string, publicKey: string } | null>(null);
   const [izipayError, setIzipayError] = useState('');
 
   const subtotal = getCartTotal();
   const shipping = subtotal > 50 ? 0 : 10;
   const total = subtotal + shipping;
 
+  // Generar orderId solo una vez al iniciar el checkout
+  const [orderId] = useState(() => `ORD-${Date.now()}`);
+
   useEffect(() => {
     if (currentStep === 2) {
       setIzipayToken(null);
       setIzipayError('');
-      // Generar orderId si no existe
-      const orderId = shippingInfo.orderId || `ORD-${Date.now()}`;
+      // Usar SIEMPRE el mismo orderId
       const body = {
         amount: total,
         ...shippingInfo,
@@ -63,7 +65,6 @@ export const CheckoutPage: React.FC = () => {
         reference: shippingInfo.identityCode || '',
         items: cartItems,
       };
-      
       fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/formtoken`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -72,7 +73,9 @@ export const CheckoutPage: React.FC = () => {
         .then(res => res.json())
         .then(data => {
           if (data.formToken && data.publicKey) {
-            setIzipayToken({ formToken: data.formToken, publicKey: data.publicKey, config: null });
+            setIzipayToken({ formToken: data.formToken, publicKey: data.publicKey });
+          } else if (data.token && data.keyRSA) {
+            setIzipayToken({ formToken: data.token, publicKey: data.keyRSA });
           } else {
             setIzipayError('No se pudo obtener la pasarela de pago.');
           }
@@ -85,8 +88,7 @@ export const CheckoutPage: React.FC = () => {
     if (currentStep === 3) {
       setIzipayToken(null);
       setIzipayError('');
-      // Generar orderId si no existe
-      const orderId = shippingInfo.orderId || `ORD-${Date.now()}`;
+      // Usar SIEMPRE el mismo orderId
       const body = {
         orderId,
         firstName: shippingInfo.firstName,
@@ -104,9 +106,6 @@ export const CheckoutPage: React.FC = () => {
         currency: 'PEN',
       };
       // LOGS PARA DEBUGGING - Verificar datos enviados al backend
-      console.log('[FRONTEND] CheckoutPage - Datos enviados al backend:');
-      console.log('[FRONTEND] URL del backend:', `${import.meta.env.VITE_API_URL}/payments/izipay/session`);
-      console.log('[FRONTEND] Body enviado:', body);
       
       fetch(`${import.meta.env.VITE_API_URL}/payments/izipay/session`, {
         method: 'POST',
@@ -114,16 +113,13 @@ export const CheckoutPage: React.FC = () => {
         body: JSON.stringify(body),
       })
         .then(res => {
-          console.log('[FRONTEND] Respuesta del backend - Status:', res.status);
           return res.json();
         })
         .then(data => {
-          console.log('[FRONTEND] Respuesta del backend - Data:', data);
-          if (data.token && data.keyRSA && data.config) {
-            console.log('[FRONTEND] Token recibido del backend:', data.token);
-            console.log('[FRONTEND] KeyRSA recibida del backend:', data.keyRSA);
-            console.log('[FRONTEND] Config recibida del backend:', data.config);
-            setIzipayToken({ formToken: data.token, publicKey: data.keyRSA, config: data.config });
+          if (data.formToken && data.publicKey) {
+            setIzipayToken({ formToken: data.formToken, publicKey: data.publicKey });
+          } else if (data.token && data.keyRSA) {
+            setIzipayToken({ formToken: data.token, publicKey: data.keyRSA });
           } else {
             console.error('[FRONTEND] Error: Datos incompletos del backend:', data);
             setIzipayToken(null);
@@ -464,32 +460,21 @@ export const CheckoutPage: React.FC = () => {
                 {!izipayToken ? (
                   <div className="text-gray-600">Cargando pasarela de pago...</div>
                 ) : (
-                  // Log detallado antes de renderizar IzipayCheckout
-                  (() => {
-                    const ready = izipayToken && izipayToken.formToken && izipayToken.publicKey && izipayToken.config && izipayToken.config.transactionId;
-                    console.log('[FRONTEND][CheckoutPage] ¿Datos completos para renderizar IzipayCheckout?', ready, izipayToken);
-                    if (!ready) {
-                      return <div className="text-red-500">Error: Datos incompletos para el pago. Reintenta o contacta soporte.</div>;
-                    }
-                    return (
-                      <IzipayCheckout
-                        formToken={izipayToken.formToken}
-                        publicKey={izipayToken.publicKey}
-                        config={izipayToken.config}
-                        onPaymentSuccess={(paymentResult) => {
-                          const orderId = paymentResult.orderId || paymentResult.order_id || paymentResult.id;
-                          clearCart();
-                          setCartOpen(false);
-                          if (orderId) {
-                            navigate(`/order/${orderId}`);
-                          } else {
-                            alert('No se pudo obtener el número de pedido.');
-                          }
-                        }}
-                        onPaymentError={err => setIzipayError(typeof err === 'string' ? err : (err as any)?.message || 'Error en el pago')}
-                      />
-                    );
-                  })()
+                  <IzipayCheckout
+                    formToken={izipayToken.formToken}
+                    publicKey={izipayToken.publicKey}
+                    onPaymentSuccess={(paymentResult) => {
+                      const orderId = paymentResult.orderId || paymentResult.order_id || paymentResult.id;
+                      clearCart();
+                      setCartOpen(false);
+                      if (orderId) {
+                        navigate(`/order/${orderId}`);
+                      } else {
+                        alert('No se pudo obtener el número de pedido.');
+                      }
+                    }}
+                    onPaymentError={err => setIzipayError(typeof err === 'string' ? err : (err as any)?.message || 'Error en el pago')}
+                  />
                 )}
               </div>
             )}

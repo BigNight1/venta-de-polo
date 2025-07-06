@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
@@ -12,8 +12,18 @@ export class ProductsService {
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
-    const created = new this.productModel(createProductDto);
-    return created.save();
+    try {
+      const created = new this.productModel(createProductDto);
+      return await created.save();
+    } catch (err: any) {
+      // Intercepta errores de validación de Mongoose
+      if (err.name === 'ValidationError') {
+        // Extrae mensajes claros de los campos requeridos
+        const messages = Object.values(err.errors).map((e: any) => e.message || e);
+        throw new BadRequestException(messages.length === 1 ? messages[0] : messages);
+      }
+      throw err;
+    }
   }
 
   async findAll(): Promise<Product[]> {

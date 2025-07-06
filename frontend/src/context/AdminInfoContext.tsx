@@ -82,7 +82,17 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
         body: JSON.stringify(productData),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error((data as any).message || 'Error al crear producto');
+      if (!res.ok) {
+        // Si la respuesta tiene un array de errores (NestJS ValidationPipe)
+        if (Array.isArray(data.message)) {
+          throw new Error(data.message.join(' | '));
+        }
+        // Si la respuesta tiene un campo 'errors' (class-validator)
+        if (Array.isArray(data.errors)) {
+          throw new Error(data.errors.map((e: any) => e.message || e).join(' | '));
+        }
+        throw new Error((data as any).message || 'Error al crear producto');
+      }
       setProducts(prev => [...prev, data]);
     } catch (err: any) {
       setError(err.message || 'Error desconocido');

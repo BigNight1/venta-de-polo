@@ -42,7 +42,7 @@ export class IzipayService {
   private readonly merchantId: string;
   private readonly environment: string;
   private readonly hmacKey: string;
-  private orderItemsMap = new Map<string, any[]>(); // orderId -> items
+  private orderItemsMap = new Map<string, { items: any[]; shipping: any; user: any }>(); // orderId -> datos completos
 
   constructor(
     private configService: ConfigService,
@@ -120,9 +120,25 @@ export class IzipayService {
       throw new Error(`Izipay error: ${data.answer?.errorMessage || JSON.stringify(data) || 'Unknown error'}`);
     }
 
-    // Guardar los items en memoria temporalmente
+    // Guardar los datos completos en memoria temporalmente
     if (paymentData.items && paymentData.orderId) {
-      this.orderItemsMap.set(paymentData.orderId, paymentData.items);
+      this.orderItemsMap.set(paymentData.orderId, {
+        items: Array.isArray(paymentData.items) ? paymentData.items : [],
+        shipping: {
+          address: paymentData.address,
+          city: paymentData.city,
+          state: paymentData.state,
+          zipCode: paymentData.zipCode,
+          country: paymentData.country,
+          identityType: paymentData.identityType,
+          identityCode: paymentData.identityCode,
+        },
+        user: {
+          name: paymentData.firstName + ' ' + paymentData.lastName,
+          email: paymentData.email,
+          phone: paymentData.phoneNumber,
+        }
+      });
     }
 
     return {
@@ -150,41 +166,30 @@ export class IzipayService {
     }
     const isPaid = decodedAnswer.orderStatus === 'PAID';
     let orderId: string | undefined = undefined;
+    let extraData: { items?: any[]; shipping?: any; user?: any } = {};
     if (isPaid) {
       orderId = decodedAnswer.orderDetails?.orderId || decodedAnswer.orderId;
-      // Recuperar los items guardados temporalmente
-      const items = orderId ? this.orderItemsMap.get(orderId) || [] : [];
+      // Recuperar los datos guardados temporalmente
+      const mapData = orderId ? this.orderItemsMap.get(orderId) : undefined;
+      extraData = (mapData && typeof mapData === 'object' && !Array.isArray(mapData)) ? mapData : { items: [], shipping: {}, user: {} };
       // Eliminar del map para liberar memoria
       if (orderId) this.orderItemsMap.delete(orderId);
       const order: Partial<Order> = {
         orderId,
-        user: {
-          name: decodedAnswer.customer?.billingDetails?.firstName + ' ' + decodedAnswer.customer?.billingDetails?.lastName,
-          email: decodedAnswer.customer?.email,
-          phone: decodedAnswer.customer?.billingDetails?.phoneNumber,
-        },
-        shipping: {
-          address: decodedAnswer.customer?.shippingDetails?.address,
-          city: decodedAnswer.customer?.shippingDetails?.city,
-          state: decodedAnswer.customer?.shippingDetails?.state,
-          zipCode: decodedAnswer.customer?.shippingDetails?.zipCode,
-          country: decodedAnswer.customer?.shippingDetails?.country,
-          identityType: decodedAnswer.customer?.billingDetails?.identityType,
-          identityCode: decodedAnswer.customer?.billingDetails?.identityCode,
-        },
-        items,
+        user: extraData.user || {},
+        shipping: extraData.shipping || {},
+        items: extraData.items || [],
         total: decodedAnswer.orderDetails?.orderTotalAmount / 100 || 0,
         payment: {
           method: 'izipay',
           status: 'pagado',
         },
-        status: 'confirmado',
+        status: 'pending',
         estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       };
       await this.ordersService.create(order);
       // Descontar stock
-      for (const item of items) {
-        // item.product._id, item.size, item.color, item.quantity
+      for (const item of extraData.items || []) {
         await this.productsService.decrementVariantStock(item.product._id, item.size, item.color, item.quantity);
       }
     }
@@ -201,79 +206,54 @@ export class IzipayService {
    * Devuelve la configuración de sesión para el widget de Izipay usando datos reales y el formToken real
    */
   async getSessionConfig(orderId: string, orderData: any) {
-    console.log('[BACKEND][getSessionConfig] orderId recibido:', orderId);
-    console.log('[BACKEND][getSessionConfig] orderData recibido:', orderData);
-    // Llama a la API de Session Token de Izipay (sandbox)
-    const sessionTokenEndpoint = 'https://sandbox-api-pw.izipay.pe/api/v1/Form/SessionToken';
-    const merchantCode = this.merchantId || 'DEMO_MERCHANT';
-    const now = new Date();
-    const dateTimeTransaction = now.getTime().toString();
-    const config = {
-      transactionId: orderId,
-      action: 'pay',
-      merchantCode: merchantCode,
-      order: {
-        orderNumber: orderId,
-        currency: orderData?.currency || 'PEN',
-        amount: String(Math.round((orderData?.amount || 1) * 100)),
-        processType: 'AT',
-        merchantBuyerId: merchantCode,
-        dateTimeTransaction: dateTimeTransaction,
-      },
-      billing: {
-        firstName: orderData?.firstName || '',
-        lastName: orderData?.lastName || '',
+    
+    // Endpoint de MiCuentaWeb/Krypton
+    const endpoint = 'https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment';
+    const auth = 'Basic ' + Buffer.from(`${this.user}:${this.password}`).toString('base64');
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': auth,
+    };
+    const body = {
+      amount: Math.round((orderData?.amount || 1) * 100), // en centavos
+      currency: orderData?.currency || 'PEN',
+      orderId,
+      customer: {
         email: orderData?.email || '',
-        phoneNumber: orderData?.phoneNumber || '',
-        street: orderData?.address || '',
-        city: orderData?.city || '',
-        state: orderData?.state || '',
-        country: orderData?.country || 'PE',
-        postalCode: orderData?.zipCode || '',
-        documentType: orderData?.identityType || 'DNI',
-        document: orderData?.identityCode || '',
-      },
-      payMethod: 'CARD,QR,YAPE_CODE',
-      render: {
-        typeForm: 'embedded',
-        container: 'iframe-payment',
-        showButtonProcessForm: true
-      },
-      // appearance: { customTheme: { ... } } // Opcional
+        billingDetails: {
+          firstName: orderData?.firstName || '',
+          lastName: orderData?.lastName || '',
+          phoneNumber: orderData?.phoneNumber || '',
+          identityType: orderData?.identityType || 'DNI',
+          identityCode: orderData?.identityCode || '',
+          address: orderData?.address || '',
+          country: orderData?.country || 'PE',
+          city: orderData?.city || '',
+          state: orderData?.state || '',
+          zipCode: orderData?.zipCode || '',
+        }
+      }
     };
-    // Llama a la API de Session Token
-    const sessionTokenBody = {
-      transactionId: config.transactionId,
-      orderNumber: config.order.orderNumber,
-      amount: config.order.amount,
-      currency: config.order.currency,
-      merchantCode: config.merchantCode,
-      // Puedes agregar más campos si la API lo requiere
-    };
-    const response = await fetch(sessionTokenEndpoint, {
+    const response = await fetch(endpoint, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${Buffer.from(`${this.user}:${this.password}`).toString('base64')}`,
-      },
-      body: JSON.stringify(sessionTokenBody),
+      headers,
+      body: JSON.stringify(body),
     });
     const text = await response.text();
-    console.log('[BACKEND][getSessionConfig] Respuesta cruda de Izipay:', text);
+    
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
       throw new Error(`[IZIPAY] Respuesta no es JSON: ${text}`);
     }
-    if (!data.token) {
-      throw new Error(`[IZIPAY] Error al obtener session token: ${JSON.stringify(data)}`);
+    if (!data.answer || !data.answer.formToken) {
+      throw new Error(`[IZIPAY] Error al obtener formToken: ${JSON.stringify(data)}`);
     }
-    const formToken = data.token;
-    // Usa la clave pública configurada
+    const formToken = data.answer.formToken;
     const publicKey = this.publicKey;
-    const responseObj = { token: formToken, keyRSA: publicKey, config };
-    console.log('[BACKEND][getSessionConfig] Respuesta enviada al frontend:', responseObj);
+    const responseObj = { formToken, publicKey };
+    
     return responseObj;
   }
 } 

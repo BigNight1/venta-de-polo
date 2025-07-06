@@ -7,4 +7,7 @@ export default () => ({
     IZIPAY_ENDPOINT: process.env.IZIPAY_ENDPOINT || 'https://static.micuentaweb.pe',
     IZIPAY_MERCHANT_ID: process.env.IZIPAY_MERCHANT_ID,
     IZIPAY_ENVIRONMENT: process.env.IZIPAY_ENVIRONMENT || 'TEST', // TEST or PRODUCTION
+    // Health Check Configuration
+    PING_URL: process.env.PING_URL,
+    PING_INTERVAL_MS: parseInt(process.env.PING_INTERVAL_MS) || 600000, // 10 minutos por defecto
 })

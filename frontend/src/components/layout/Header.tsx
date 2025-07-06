@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Search, ShoppingCart, User, Menu, X } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useCombobox } from 'downshift';
+import { useProducts } from '../../context/ProductContext';
+import { getImageUrl } from '../../lib/getImageUrl';
 
 export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -17,11 +20,10 @@ export const Header: React.FC = () => {
     setFilters,
     getCartItemsCount,
   } = useStore();
+  const { products } = useProducts();
 
   const navigationItems = [
     { id: '/', label: 'Inicio' },
-    { id: '/about', label: 'Acerca de' },
-    { id: '/contact', label: 'Contacto' },
   ];
 
   const categories = [
@@ -45,6 +47,31 @@ export const Header: React.FC = () => {
       navigate('/');
     }
   };
+
+  // Downshift autocomplete
+  const items = products.filter(p =>
+    searchQuery.length > 0 && p.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+  const {
+    isOpen,
+    getMenuProps,
+    getInputProps,
+    getItemProps,
+    highlightedIndex,
+    selectItem,
+  } = useCombobox({
+    items,
+    inputValue: searchQuery,
+    onInputValueChange: ({ inputValue }) => setSearchQuery(inputValue || ''),
+    itemToString: item => (item ? item.name : ''),
+    onSelectedItemChange: ({ selectedItem }) => {
+      if (selectedItem) {
+        navigate(`/product/${selectedItem._id}`);
+        setSearchQuery('');
+      }
+    },
+  });
+  console.log(products)
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-lg border-b border-gray-200">
@@ -99,12 +126,27 @@ export const Header: React.FC = () => {
                 <Search className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Buscar polos..."
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                {...getInputProps({
+                  placeholder: 'Buscar polos...',
+                  className: 'block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500',
+                })}
               />
+              <ul
+                {...getMenuProps()}
+                className={`absolute z-10 bg-white border w-full mt-1 rounded shadow ${isOpen && items.length > 0 ? '' : 'hidden'}`}
+              >
+                {isOpen &&
+                  items.map((item, index) => (
+                    <li
+                      key={item._id}
+                      {...getItemProps({ item, index })}
+                      className={`flex items-center px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-100' : ''}`}
+                    >
+                      <img src={getImageUrl(item.images[0])} alt={item.name} className="w-10 h-10 object-cover rounded mr-3" />
+                      <span>{item.name}</span>
+                    </li>
+                  ))}
+              </ul>
             </form>
           </div>
 

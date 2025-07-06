@@ -1,11 +1,42 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, Loader2, Package, TrendingUp, AlertCircle, CheckCircle, Eye } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, X, Loader2, Package, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { useAdminInfo } from '../../context/AdminInfoContext';
 import { getImageUrl } from '../../lib/getImageUrl';
 import { OrdersPanel } from './OrdersPanel';
 import Swal from 'sweetalert2';
+import { useForm, useFieldArray } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+
+// Esquema de validación Yup
+const variantSchema = yup.object().shape({
+  size: yup.string().required('Falta la talla'),
+  color: yup.string().required('Falta el color'),
+  stock: yup.number().typeError('Falta el stock').required('Falta el stock').min(1, 'El stock debe ser mayor a 0'),
+});
+const productSchema = yup.object().shape({
+  name: yup.string().required('Falta rellenar el nombre'),
+  description: yup.string().required('Falta rellenar la descripción'),
+  price: yup.number().typeError('Pon un precio mayor a 0').required('Pon un precio mayor a 0').min(1, 'Pon un precio mayor a 0'),
+  images: yup.array().of(yup.string().required('Falta agregar al menos una imagen')).min(1, 'Falta agregar al menos una imagen').required(),
+  category: yup.mixed<'hombre' | 'mujer' | 'ninos'>().oneOf(['hombre', 'mujer', 'ninos'], 'Falta seleccionar la categoría').required('Falta seleccionar la categoría'),
+  variants: yup.array().of(variantSchema).min(1, 'Debes agregar al menos una variante').required(),
+  inStock: yup.boolean().required(),
+  featured: yup.boolean().required()
+});
+
+interface ProductForm {
+  name: string;
+  description: string;
+  price: number;
+  images: string[];
+  category: 'hombre' | 'mujer' | 'ninos';
+  variants: { size: string; color: string; stock: number }[];
+  inStock: boolean;
+  featured: boolean;
+}
 
 export const AdminPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'analytics' | 'orders'>('overview');
@@ -46,79 +77,72 @@ export const AdminPanel: React.FC = () => {
   const [editingVariantIdx, setEditingVariantIdx] = useState<number | null>(null);
   const [imageUploadError, setImageUploadError] = useState('');
   const [imageUploading, setImageUploading] = useState(false);
-  const [variantError, setVariantError] = useState('');
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
-  const [deleteError, setDeleteError] = useState('');
-  const [deleteSuccess, setDeleteSuccess] = useState('');
+
+  const defaultValues: ProductForm = {
+    name: '',
+    description: '',
+    price: 0,
+    images: [],
+    category: 'hombre',
+    variants: [],
+    inStock: true,
+    featured: false,
+  };
+
+  const formMethods = useForm<ProductForm>({
+    resolver: yupResolver(productSchema),
+    defaultValues,
+    mode: 'onSubmit',
+  });
+
+  // Inicializar useFieldArray para variantes
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+    control: formMethods.control,
+    name: 'variants',
+  });
 
   const handleVariantInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVariantForm((prev) => ({ ...prev, [name]: name === 'stock' ? Number(value) : value }));
   };
 
-  const handleAddOrUpdateVariant = () => {
+  // handleAddVariant y handleUpdateVariant
+  const handleAddVariant = () => {
     if (!variantForm.size || !variantForm.color || variantForm.stock < 1) return;
-    const newVariant = {
+    appendVariant({
       size: variantForm.size.toUpperCase(),
       color: variantForm.color,
       stock: variantForm.stock,
-    };
-    if (editingVariantIdx !== null) {
-      // Actualizar variante existente
-      const updated = [...(formData.variants || [])];
-      updated[editingVariantIdx] = newVariant;
-      updateFormData({ variants: updated });
-      setEditingVariantIdx(null);
-    } else {
-      // Agregar nueva variante
-      updateFormData({
-        variants: [
-          ...(formData.variants || []),
-          newVariant
-        ]
-      });
-    }
+    });
+    setVariantForm({ size: '', color: '', stock: 1 });
+  };
+  const handleUpdateVariant = () => {
+    if (editingVariantIdx === null) return;
+    removeVariant(editingVariantIdx);
+    appendVariant({
+      size: variantForm.size.toUpperCase(),
+      color: variantForm.color,
+      stock: variantForm.stock,
+    });
+    setEditingVariantIdx(null);
     setVariantForm({ size: '', color: '', stock: 1 });
   };
 
-  const handleEditVariant = (idx: number) => {
-    const v = (formData.variants || [])[idx];
-    setVariantForm({ size: v.size, color: v.color, stock: v.stock });
-    setEditingVariantIdx(idx);
-  };
-
-  const handleRemoveVariant = (idx: number) => {
-    updateFormData({
-      variants: (formData.variants || []).filter((_, i) => i !== idx)
-    });
-    if (editingVariantIdx === idx) {
-      setEditingVariantIdx(null);
-      setVariantForm({ size: '', color: '', stock: 1 });
-    }
-  };
-
-  const handleSave = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleSave = async (data: ProductForm) => {
     setSaveError('');
     setSaveSuccess('');
-    if (!formData.variants || formData.variants.length === 0) {
-      setVariantError('Debes agregar al menos una variante.');
-      return;
-    } else {
-      setVariantError('');
-    }
     try {
-      console.log('Guardando producto:', formData);
       if (editingProduct && editingProduct._id) {
-        await updateProduct(editingProduct._id, formData);
+        await updateProduct(editingProduct._id, data);
         setSaveSuccess('Producto actualizado correctamente.');
       } else {
-        await createProduct(formData);
+        await createProduct(data);
         setSaveSuccess('Producto guardado correctamente.');
       }
       setTimeout(() => setSaveSuccess(''), 2000);
-      resetForm();
+      formMethods.reset();
     } catch (err: any) {
       setSaveError(err?.message || 'Error al guardar el producto.');
       console.error('Error al guardar producto:', err);
@@ -126,8 +150,6 @@ export const AdminPanel: React.FC = () => {
   };
 
   const handleDelete = async (productId: string) => {
-    setDeleteError('');
-    setDeleteSuccess('');
     // SweetAlert2 confirmación
     const result = await Swal.fire({
       title: '¿Estás seguro?',
@@ -141,11 +163,10 @@ export const AdminPanel: React.FC = () => {
     if (!result.isConfirmed) return;
     try {
       await deleteProduct(productId);
-      setDeleteSuccess('Producto eliminado correctamente.');
-      setTimeout(() => setDeleteSuccess(''), 2000);
+      setTimeout(() => setSaveSuccess(''), 2000);
       resetForm();
     } catch (err: any) {
-      setDeleteError(err?.message || 'Error al eliminar el producto.');
+      setSaveError(err?.message || 'Error al eliminar el producto.');
       console.error('Error al eliminar producto:', err);
     }
   };
@@ -199,13 +220,35 @@ export const AdminPanel: React.FC = () => {
       }
     }
     if (uploadedPaths.length > 0) {
-      const currentImages = formData.images || [];
+      const currentImages = formMethods.getValues('images') || [];
       const newImages = [...currentImages, ...uploadedPaths];
-      updateFormData({ images: newImages });
+      formMethods.setValue('images', newImages, { shouldValidate: true });
     }
     setImageUploading(false);
     e.target.value = '';
   };
+
+  // Mostrar errores de validación de Yup en el recuadro rojo de la izquierda
+  const collectYupErrors = (errs: any): string[] => {
+    if (!errs) return [];
+    let messages: string[] = [];
+    Object.values(errs).forEach((err: any) => {
+      if (err?.message) messages.push(err.message);
+      if (typeof err === 'object' && err !== null) {
+        if (Array.isArray(err)) {
+          err.forEach((item) => {
+            if (item && typeof item === 'object') {
+              messages = messages.concat(collectYupErrors(item));
+            }
+          });
+        } else if (err && typeof err === 'object' && !err.message) {
+          messages = messages.concat(collectYupErrors(err));
+        }
+      }
+    });
+    return messages;
+  };
+  const yupErrorMessages = collectYupErrors(formMethods.formState.errors);
 
   const renderOverview = () => (
     <div className="space-y-6">
@@ -320,10 +363,17 @@ export const AdminPanel: React.FC = () => {
               Nuevo Producto
             </Button>
           </div>
-          
-          {error && (
-            <div className="p-4 bg-red-50 border-l-4 border-red-400">
-              <p className="text-red-700">{error}</p>
+          {/* Mostrar errores de validación de Yup y del backend aquí */}
+          {(yupErrorMessages.length > 0 || error) && (
+            <div className="p-4 bg-red-50 border-l-4 border-red-400 mb-2">
+              {yupErrorMessages.length > 0 && (
+                <ul className="list-disc pl-5 text-red-700 text-sm">
+                  {yupErrorMessages.map((msg, idx) => (
+                    <li key={idx}>{msg}</li>
+                  ))}
+                </ul>
+              )}
+              {error && <p className="text-red-700 text-sm mt-2">{error}</p>}
             </div>
           )}
           
@@ -412,37 +462,21 @@ export const AdminPanel: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 max-h-[70vh] overflow-y-auto">
-              <form onSubmit={handleSave} className="space-y-4">
+            <div className="p-6 max-h-[80vh] overflow-y-auto">
+              <form onSubmit={formMethods.handleSubmit(handleSave)} className="space-y-4">
                 {/* Basic Info */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Nombre *
                   </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name || ''}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                    placeholder="Nombre del producto"
-                  />
+                  <input {...formMethods.register('name')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50" placeholder="Nombre del producto" />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Descripción *
                   </label>
-                  <textarea
-                    name="description"
-                    value={formData.description || ''}
-                    onChange={handleInputChange}
-                    disabled={isLoading}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                    placeholder="Descripción del producto"
-                  />
+                  <textarea {...formMethods.register('description')} rows={3} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50" placeholder="Descripción del producto" />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -450,29 +484,14 @@ export const AdminPanel: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Precio (S/) *
                     </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price || ''}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                      step="0.01"
-                      min="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                    />
+                    <input type="number" step="0.01" min="0" {...formMethods.register('price', { valueAsNumber: true })} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50" />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Categoría *
                     </label>
-                    <select
-                      name="category"
-                      value={formData.category || ''}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                    >
+                    <select {...formMethods.register('category')} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50">
                       <option value="hombre">Hombre</option>
                       <option value="mujer">Mujer</option>
                       <option value="ninos">Niños</option>
@@ -485,7 +504,7 @@ export const AdminPanel: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Imágenes</label>
                   <div className="flex items-center overflow-x-auto space-x-3 pb-2">
                     {/* Imágenes existentes */}
-                    {formData.images && formData.images.map((image, index) => (
+                    {formMethods.getValues('images') && formMethods.getValues('images').map((image, index) => (
                       <div key={index} className="relative flex-shrink-0">
                         <img
                           src={getImageUrl(image)}
@@ -496,8 +515,9 @@ export const AdminPanel: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            const newImages = formData.images?.filter((_, i) => i !== index) || [];
-                            updateFormData({ images: newImages });
+                            const images = formMethods.getValues('images') || [];
+                            const newImages = images.filter((_, i) => i !== index);
+                            formMethods.setValue('images', newImages, { shouldValidate: true });
                           }}
                           className="absolute -top-[0px] -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow"
                         >
@@ -510,47 +530,7 @@ export const AdminPanel: React.FC = () => {
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={async (e) => {
-                          setImageUploadError('');
-                          setImageUploading(true);
-                          const file = e.target.files?.[0];
-                          if (!file) {
-                            setImageUploading(false);
-                            return;
-                          }
-                          const token = localStorage.getItem('admin_token');
-                          const formDataFile = new FormData();
-                          formDataFile.append('file', file);
-                          try {
-                            const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
-                              method: 'POST',
-                              body: formDataFile,
-                              headers: token ? { Authorization: `Bearer ${token}` } : {},
-                            });
-                            if (res.status === 401) {
-                              setImageUploadError('No autorizado para subir imágenes. Inicia sesión como admin.');
-                              setImageUploading(false);
-                              return;
-                            }
-                            if (!res.ok) {
-                              setImageUploadError('Error al subir la imagen.');
-                              setImageUploading(false);
-                              return;
-                            }
-                            const data = await res.json();
-                            if (data.filePath) {
-                              const currentImages = formData.images || [];
-                              const newImages = [...currentImages, data.filePath];
-                              updateFormData({ images: newImages });
-                            } else {
-                              setImageUploadError('No se recibió la ruta de la imagen.');
-                            }
-                          } catch (err) {
-                            setImageUploadError('Error al subir la imagen.');
-                          }
-                          setImageUploading(false);
-                          e.target.value = '';
-                        }}
+                        onChange={handleImageUpload}
                         disabled={isLoading || imageUploading}
                         className="absolute inset-0 opacity-0 cursor-pointer"
                       />
@@ -580,26 +560,12 @@ export const AdminPanel: React.FC = () => {
                 {/* Checkboxes */}
                 <div className="space-y-2">
                   <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="inStock"
-                      checked={formData.inStock || false}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                    />
+                    <input type="checkbox" {...formMethods.register('inStock')} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50" />
                     <span className="ml-2 text-sm text-gray-700">En stock</span>
                   </label>
                   
                   <label className="flex items-center">
-                    <input
-                      type="checkbox"
-                      name="featured"
-                      checked={formData.featured || false}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
-                    />
+                    <input type="checkbox" {...formMethods.register('featured')} className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50" />
                     <span className="ml-2 text-sm text-gray-700">Producto destacado</span>
                   </label>
                 </div>
@@ -633,15 +599,19 @@ export const AdminPanel: React.FC = () => {
                       placeholder="Stock"
                       className="px-2 py-1 border rounded w-16"
                     />
-                    <Button type="button" onClick={handleAddOrUpdateVariant} className="px-3">
-                      {editingVariantIdx !== null ? 'Actualizar' : 'Agregar'}
-                    </Button>
-                    {editingVariantIdx !== null && (
-                      <Button type="button" variant="outline" onClick={() => { setEditingVariantIdx(null); setVariantForm({ size: '', color: '', stock: 1 }); }} className="px-3">Cancelar</Button>
+                    {editingVariantIdx === null ? (
+                      <div className="flex justify-end mt-2">
+                        <Button type="button" onClick={handleAddVariant} className="px-3">Agregar</Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 mt-2">
+                        <Button type="button" onClick={handleUpdateVariant} className="px-3">Actualizar</Button>
+                        <Button type="button" variant="outline" onClick={() => { setEditingVariantIdx(null); setVariantForm({ size: '', color: '', stock: 1 }); }} className="px-3">Cancelar</Button>
+                      </div>
                     )}
                   </div>
                   {/* Lista de variantes */}
-                  {(formData.variants || []).length > 0 && (
+                  {variantFields.length > 0 && (
                     <div className="border rounded p-2 bg-gray-50">
                       <table className="w-full text-xs">
                         <thead>
@@ -653,19 +623,26 @@ export const AdminPanel: React.FC = () => {
                           </tr>
                         </thead>
                         <tbody>
-                          {(formData.variants || []).map((v, idx) => (
-                            <tr key={idx}>
+                          {variantFields.map((v, idx) => (
+                            <tr key={v.id}>
                               <td>{v.size}</td>
                               <td>
                                 <span className="inline-flex items-center gap-1">
-                                  <span style={{ background: COLOR_MAP[v.color.toUpperCase()] || '#F3F4F6', border: '1px solid #ccc', display: 'inline-block', width: 16, height: 16, borderRadius: '50%' }} />
+                                  <span style={{ background: COLOR_MAP[v.color?.toUpperCase()] || '#F3F4F6', border: '1px solid #ccc', display: 'inline-block', width: 16, height: 16, borderRadius: '50%' }} />
                                   <span>{v.color}</span>
                                 </span>
                               </td>
                               <td>{v.stock}</td>
                               <td>
-                                <button type="button" onClick={() => handleEditVariant(idx)} className="text-blue-500 hover:underline mr-2">Editar</button>
-                                <button type="button" onClick={() => handleRemoveVariant(idx)} className="text-red-500 hover:underline">Eliminar</button>
+                                <button type="button" onClick={() => {
+                                  setVariantForm({
+                                    size: v.size,
+                                    color: v.color,
+                                    stock: v.stock,
+                                  });
+                                  setEditingVariantIdx(idx);
+                                }} className="text-blue-500 hover:underline mr-2">Editar</button>
+                                <button type="button" onClick={() => removeVariant(idx)} className="text-red-500 hover:underline">Eliminar</button>
                               </td>
                             </tr>
                           ))}
@@ -675,31 +652,18 @@ export const AdminPanel: React.FC = () => {
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="flex space-x-3 pt-4">
-                  <Button 
-                    type="submit"
-                    disabled={isLoading || !formData.name || !formData.price || !formData.images || !formData.category || !(formData.variants && formData.variants.length > 0)}
-                    className="flex-1"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4 mr-2" />
-                    )}
+                {/* Botón Guardar y mensajes de error */}
+                <div className="flex items-center space-x-4 mt-4">
+                  <Button type="submit" color="primary" disabled={isLoading}>
                     {isLoading ? 'Guardando...' : 'Guardar'}
                   </Button>
-                  {variantError && <div className="text-red-500 text-xs mt-1">{variantError}</div>}
-                  {saveError && <div className="text-red-500 text-xs mt-1">{saveError}</div>}
-                  {saveSuccess && <div className="text-green-600 text-xs mt-1">{saveSuccess}</div>}
-                  <Button 
-                    variant="outline" 
-                    onClick={resetForm} 
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
+                  {saveError && (
+                    <div className="text-red-500 text-sm">
+                      {Array.isArray(saveError)
+                        ? saveError.map((msg, idx) => <div key={idx}>{msg}</div>)
+                        : saveError}
+                    </div>
+                  )}
                 </div>
               </form>
             </div>
@@ -708,6 +672,21 @@ export const AdminPanel: React.FC = () => {
       </div>
     </div>
   );
+
+  useEffect(() => {
+    if (isEditing && editingProduct) {
+      formMethods.reset({
+        ...editingProduct,
+        price: editingProduct.price || 0,
+        images: editingProduct.images || [],
+        variants: editingProduct.variants || [],
+        inStock: editingProduct.inStock ?? true,
+        featured: editingProduct.featured ?? false,
+      });
+    } else if (isCreating) {
+      formMethods.reset(defaultValues);
+    }
+  }, [isEditing, editingProduct, isCreating]);
 
   return (
     <div className="min-h-screen bg-gray-50">

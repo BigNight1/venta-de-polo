@@ -1,28 +1,44 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, IsArray, IsBoolean, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class VariantDto {
+  @IsString({ message: 'Falta la talla' })
+  @IsNotEmpty({ message: 'Falta la talla' })
+  size: string;
+
+  @IsString({ message: 'Falta el color' })
+  @IsNotEmpty({ message: 'Falta el color' })
+  color: string;
+
+  @IsNumber({}, { message: 'Falta el stock' })
+  stock: number;
+}
 
 export class CreateProductDto {
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'El nombre debe ser un texto' })
+  @IsNotEmpty({ message: 'Falta rellenar el nombre' })
   name: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'La descripción debe ser un texto' })
+  @IsNotEmpty({ message: 'Falta rellenar la descripción' })
   description: string;
 
-  @IsNumber()
+  @IsNumber({}, { message: 'El precio debe ser un número' })
   price: number;
 
-  @IsArray()
-  @IsString({ each: true })
-  @IsNotEmpty({ each: true })
+  @IsArray({ message: 'Las imágenes deben ser un arreglo' })
+  @IsString({ each: true, message: 'Cada imagen debe ser una URL de texto' })
+  @IsNotEmpty({ each: true, message: 'Falta agregar al menos una imagen' })
   images: string[];
 
-  @IsString()
-  @IsNotEmpty()
+  @IsString({ message: 'La categoría debe ser un texto' })
+  @IsNotEmpty({ message: 'Falta seleccionar la categoría' })
   category: string;
 
-  @IsArray()
-  variants: { size: string; color: string; stock: number }[];
+  @IsArray({ message: 'Debes agregar al menos una variante (talla, color, stock)' })
+  @ValidateNested({ each: true })
+  @Type(() => VariantDto)
+  variants: VariantDto[];
 
   @IsBoolean()
   inStock: boolean;
