@@ -3,6 +3,8 @@ import { X, Mail, Lock, User } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/FirebaseAuthContext';
+import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, setAuthModalOpen } = useStore();
@@ -17,6 +19,8 @@ export const AuthModal: React.FC = () => {
   });
 
   const { loginWithGoogle, user: firebaseUser } = useAuth();
+  const { login: adminLogin } = useAdminAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (firebaseUser && isAuthModalOpen) {
@@ -37,8 +41,21 @@ export const AuthModal: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
-
-   
+    // Si el email es admin@polos.com, login como admin
+    if (formData.email === 'admin@polos.com') {
+      const result = await adminLogin(formData.email, formData.password);
+      setIsLoading(false);
+      if (result.success) {
+        handleClose();
+        navigate('/');
+      } else {
+        setError(result.error || 'Credenciales incorrectas');
+      }
+      return;
+    }
+    // Aquí iría el flujo normal de login de usuario (Firebase, etc.)
+    setIsLoading(false);
+    setError('Solo se permite login de admin en este modal demo.');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

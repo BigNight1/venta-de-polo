@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Search, ShoppingCart, User, Menu, X, ShoppingBag, LogOut } from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, ShoppingBag} from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCombobox } from 'downshift';
 import { useProducts } from '../../context/ProductContext';
 import { getImageUrl } from '../../lib/getImageUrl';
 import { useAuth } from '../../context/FirebaseAuthContext';
+import { useAdminAuth } from '../../context/AdminAuthContext';
 
 export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -22,6 +23,7 @@ export const Header: React.FC = () => {
   } = useStore();
   const { products } = useProducts();
   const { user: firebaseUser, logout } = useAuth();
+  const { admin, logout: adminLogout, isAuthenticated: isAdminAuthenticated } = useAdminAuth();
 
   const navigationItems = [
     { id: '/', label: 'Inicio' },
@@ -169,50 +171,86 @@ export const Header: React.FC = () => {
               )}
             </button>
 
-            {/* Firebase Auth User Dropdown */}
-            {firebaseUser ? (
+            {/* Usuario autenticado (Google o admin) */}
+            {(firebaseUser || (admin && isAdminAuthenticated)) ? (
               <div className="relative">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"
                 >
-                  <img
-                    src={firebaseUser.photoURL || ''}
-                    alt={firebaseUser.displayName || ''}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-indigo-100"
-                  />
+                  {firebaseUser ? (
+                    <img
+                      src={firebaseUser.photoURL || ''}
+                      alt={firebaseUser.displayName || ''}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-indigo-100"
+                    />
+                  ) : (
+                    // Ícono genérico para admin
+                    <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center border-2 border-indigo-100">
+                      <span className="text-xl font-bold text-blue-700">A</span>
+                    </div>
+                  )}
                   <div className="text-left hidden md:block">
-                    <p className="text-sm font-semibold text-gray-800">{firebaseUser.displayName}</p>
-                    <p className="text-xs text-gray-600">En línea</p>
+                    <p className="text-sm font-semibold text-gray-800">
+                      {firebaseUser ? firebaseUser.displayName : admin?.firstName || 'Admin'}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      {firebaseUser ? firebaseUser.email : admin?.email}
+                    </p>
                   </div>
                 </button>
                 {showDropdown && (
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                     <div className="px-4 py-3 border-b border-gray-100 flex items-center space-x-3">
-                      
+                      {firebaseUser ? (
+                        <img
+                          src={firebaseUser.photoURL || ''}
+                          alt={firebaseUser.displayName || ''}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-indigo-100"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center border-2 border-indigo-100">
+                          <span className="text-xl font-bold text-blue-700">A</span>
+                        </div>
+                      )}
                       <div>
-                        <p className="text-sm font-semibold text-gray-800">{firebaseUser.displayName}</p>
-                        <p className="text-xs text-gray-600">{firebaseUser.email}</p>
+                        <p className="text-sm font-semibold text-gray-800">{firebaseUser ? firebaseUser.displayName : admin?.firstName || 'Admin'}</p>
+                        <p className="text-xs text-gray-600">{firebaseUser ? firebaseUser.email : admin?.email}</p>
                       </div>
                     </div>
+                    {/* Mis Pedidos solo para usuario Google */}
+                    {firebaseUser && (
+                      <button
+                        onClick={handleMyOrders}
+                        className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                      >
+                        <ShoppingBag className="w-5 h-5 text-gray-600" />
+                        <span className="text-sm text-gray-700">Mis Pedidos</span>
+                      </button>
+                    )}
+                    {/* Dashboard solo para admin */}
+                    {admin && admin.role === 'admin' && (
+                      <>
+                        <Link
+                          to="/admin"
+                          className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <span className="text-sm text-blue-700 font-semibold">Dashboard</span>
+                        </Link>
+                        <div className="border-t border-gray-100 my-1" />
+                      </>
+                    )}
                     <button
-                      onClick={handleMyOrders}
+                      onClick={firebaseUser ? logout : adminLogout}
                       className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                     >
-                      <ShoppingBag className="w-5 h-5 text-gray-600" />
-                      <span className="text-sm text-gray-700">Mis Pedidos</span>
-                    </button>
-                    <button
-                      onClick={logout}
-                      className="w-full flex items-center space-x-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-t border-gray-100"
-                    >
-                      <LogOut className="w-5 h-5 text-red-600" />
                       <span className="text-sm text-red-700">Cerrar Sesión</span>
                     </button>
                   </div>
                 )}
               </div>
             ) : (
+              // Ícono de login solo si NO hay sesión
               <button
                 onClick={() => setAuthModalOpen(true)}
                 className="p-2 text-gray-600 hover:text-blue-600 transition-colors duration-200 flex items-center space-x-2"

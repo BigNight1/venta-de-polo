@@ -2,12 +2,13 @@ import React from 'react';
 import { AdminLogin } from './AdminLogin';
 import { AdminPanel } from './AdminPanel';
 import { useAdminAuth } from '../../context/AdminAuthContext';
+import { Navigate } from 'react-router-dom';
 
 export const AdminRoute: React.FC = () => {
-  const { isAuthenticated, logout } = useAdminAuth();
+  const { isAuthenticated, admin, logout } = useAdminAuth();
 
-  if (!isAuthenticated) {
-    return <AdminLogin onLogin={() => {}} />;
+  if (!isAuthenticated || !admin || admin.role !== 'admin') {
+    return <Navigate to="/" />;
   }
 
   return (

@@ -9,7 +9,7 @@ interface AdminLoginProps {
 
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
@@ -21,9 +21,14 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    const result = await login(credentials.username, credentials.password);
+    const result = await login(credentials.email, credentials.password);
     setLoading(false);
     if (result.success) {
+      // Verificar que el usuario sea admin
+      if (typeof window !== 'undefined') {
+        const adminData = JSON.parse(localStorage.getItem('admin_token') || '{}');
+        // Si tienes el rol en el contexto, puedes usarlo directamente
+      }
       onLogin();
     } else {
       setError(result.error || 'Error desconocido');
@@ -56,18 +61,18 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin }) => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Usuario
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                Email
               </label>
               <input
-                id="username"
-                name="username"
-                type="text"
+                id="email"
+                name="email"
+                type="email"
                 required
-                value={credentials.username}
+                value={credentials.email}
                 onChange={handleInputChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Nombre de usuario"
+                placeholder="admin@polos.com"
               />
             </div>
 

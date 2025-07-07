@@ -10,28 +10,42 @@ export class AuthService {
     private jwtService: JwtService
   ) {}
 
-  async validateUser(username: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne(username);
+  async validateUser(identifier: string, pass: string): Promise<any> {
+    const user = await this.usersService.findOne(identifier);
     if (!user) {
       console.log('Usuario no encontrado');
     } else {
       const match = await bcrypt.compare(pass, user.password);
+      console.log('¿Password coincide?', match);
     }
     if (user && await bcrypt.compare(pass, user.password)) {
       const { password, ...result } = user as any;
+      console.log('Usuario validado:', result);
       return result;
     }
     return null;
   }
 
   async login(user: any) {
-    const payload = { username: user.username, sub: user._id, role: user.role };
+    console.log('login - user:', user);
+    const u = user._doc ? user._doc : user;
+    const payload = {
+      username: u.username,
+      sub: u._id,
+      role: u.role,
+      email: u.email,
+      firstName: u.firstName,
+      lastName: u.lastName
+    };
     return {
       access_token: this.jwtService.sign(payload),
       user: {
-        id: user._id,
-        username: user.username,
-        role: user.role
+        id: u._id,
+        username: u.username,
+        email: u.email,
+        role: u.role,
+        firstName: u.firstName,
+        lastName: u.lastName
       }
     };
   }

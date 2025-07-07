@@ -25,8 +25,19 @@ export class UsersService {
     return createdUser.save();
   }
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.userModel.findOne({ username }).exec();
+  async findOne(identifier: string): Promise<User | undefined> {
+    console.log('Buscando usuario por:', identifier);
+    const user = await this.userModel.findOne({
+      $or: [
+        { username: identifier },
+        { email: identifier }
+      ]
+    }).exec();
+    return user;
+  }
+
+  async findByEmail(email: string): Promise<User | undefined> {
+    return this.userModel.findOne({ email }).exec();
   }
 
   async findById(id: string): Promise<User> {
@@ -59,7 +70,7 @@ export class UsersService {
   async createAdminUser(): Promise<User> {
     const adminData = {
       username: 'admin',
-      password: "admin",
+      password: "admin123",
       email: 'admin@polos.com',
       role: 'admin',
       firstName: 'Administrador',
@@ -68,10 +79,11 @@ export class UsersService {
 
     // Verificar si ya existe el admin
     const existingAdmin = await this.findOne(adminData.username);
+    console.log('¿Ya existe admin?', existingAdmin);
     if (existingAdmin) {
       return existingAdmin;
     }
-
+    console.log('Creando admin:', adminData);
     return this.create(adminData);
   }
 } 
