@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Search, ShoppingCart, User, Menu, X, ShoppingBag} from 'lucide-react';
+import { Search, ShoppingCart, User, Menu, X, ShoppingBag } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useCombobox } from 'downshift';
-import { useProducts } from '../../context/ProductContext';
-import { getImageUrl } from '../../lib/getImageUrl';
+import { useProducts } from '../../hooks/useProducts';
 import { useAuth } from '../../context/FirebaseAuthContext';
-import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
+import { Button } from '../ui/Button';
+import { AuthModal } from '../auth/AuthModal';
 
 export const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -148,7 +149,7 @@ export const Header: React.FC = () => {
                       {...getItemProps({ item, index })}
                       className={`flex items-center px-3 py-2 cursor-pointer ${highlightedIndex === index ? 'bg-blue-100' : ''}`}
                     >
-                      <img src={getImageUrl(item.images[0])} alt={item.name} className="w-10 h-10 object-cover rounded mr-3" />
+                      <img src={(item.images?.[0]?.url || '')} alt={item.name} className="w-10 h-10 object-cover rounded mr-3" />
                       <span>{item.name}</span>
                     </li>
                   ))}
@@ -173,7 +174,7 @@ export const Header: React.FC = () => {
 
             {/* Usuario autenticado (Google o admin) */}
             {(firebaseUser || (admin && isAdminAuthenticated)) ? (
-              <div className="relative">
+            <div className="relative">
                 <button
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none"

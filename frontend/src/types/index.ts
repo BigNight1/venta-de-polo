@@ -4,12 +4,17 @@ export interface ProductVariant {
   stock: number;
 }
 
+export interface ProductImage {
+  url: string;
+  public_id: string;
+}
+
 export interface Product {
   _id: string;
   name: string;
   description: string;
   price: number;
-  images: string[];
+  images: ProductImage[];
   variants: ProductVariant[];
   category: 'hombre' | 'mujer' | 'ninos';
   inStock: boolean;

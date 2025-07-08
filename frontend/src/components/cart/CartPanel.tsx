@@ -4,7 +4,6 @@ import { useStore } from '../../store/useStore';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
-import { getImageUrl } from '../../lib/getImageUrl';
 
 export const CartPanel: React.FC = () => {
   const { 
@@ -78,7 +77,7 @@ export const CartPanel: React.FC = () => {
                         {/* Product Image */}
                         <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                           <img
-                            src={getImageUrl(item.product.images[0] || '')}
+                            src={(item.product.images?.[0]?.url || '')}
                             alt={item.product.name}
                             className="w-full h-full object-cover"
                           />

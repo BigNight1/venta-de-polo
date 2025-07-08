@@ -14,7 +14,6 @@ import {
 import { useStore } from "../../store/useStore";
 import { formatPrice } from "../../lib/utils";
 import { Button } from "../ui/Button";
-import { getImageUrl } from "../../lib/getImageUrl";
 import { useNavigate } from "react-router-dom";
 import { IzipayCheckout } from "./IzipayCheckout";
 import { useAuth } from '../../context/FirebaseAuthContext';
@@ -222,7 +221,7 @@ export const CheckoutPage: React.FC = () => {
           >
             <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
               <img
-                src={getImageUrl(item.product.images[0] || "")}
+                src={(item.product.images?.[0]?.url || "")}
                 alt={item.product.name}
                 className="w-full h-full object-cover"
               />

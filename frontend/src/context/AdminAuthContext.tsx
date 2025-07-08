@@ -25,9 +25,11 @@ const AdminAuthContext = createContext<AdminAuthContextProps>({
   logout: () => {},
 });
 
-export const useAdminAuth = () => useContext(AdminAuthContext);
+interface AdminAuthProviderProps {
+  children: ReactNode;
+}
 
-export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
+export const AdminAuthProvider: React.FC<AdminAuthProviderProps> = ({ children }) => {
   const [admin, setAdmin] = useState<AdminInfo | null>(() => {
     
     const token = localStorage.getItem('admin_token');
@@ -129,4 +131,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AdminAuthContext.Provider>
   );
-}; 
+};
+
+// Exportar el contexto para que los hooks puedan acceder a él
+export { AdminAuthContext }; 

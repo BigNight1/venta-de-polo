@@ -15,6 +15,15 @@ export class Variant {
   stock: number;
 }
 
+@Schema({ _id: false })
+export class ProductImage {
+  @Prop({ required: true })
+  url: string;
+
+  @Prop({ required: true })
+  public_id: string;
+}
+
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true })
@@ -26,8 +35,8 @@ export class Product {
   @Prop({ required: true })
   price: number;
 
-  @Prop({ type: [String], required: true })
-  images: string[];
+  @Prop({ type: [ProductImage], required: true })
+  images: ProductImage[];
 
   @Prop({ required: true })
   category: string;

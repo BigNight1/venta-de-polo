@@ -4,7 +4,6 @@ import type { Product } from '../../types';
 import { useStore } from '../../store/useStore';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { getImageUrl } from '../../lib/getImageUrl';
 
 interface ProductCardProps {
   product: Product;
@@ -49,7 +48,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         onClick={handleProductClick}
       >
         <img
-          src={getImageUrl(product.images[0] || '')}
+          src={(product.images?.[0]?.url || '')}
           alt={product.name}
           className="w-full h-full object-cover transform transition-transform duration-200 ease-out group-hover:scale-105"
           loading="lazy"

@@ -1,9 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { X, ShoppingCart, Minus, Plus, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, ShoppingCart, ZoomIn, ZoomOut } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { getImageUrl } from '../../lib/getImageUrl';
 
 const COLOR_MAP: Record<string, string> = {
   'BLANCO': '#FFFFFF',
@@ -206,7 +205,7 @@ export const ProductModal: React.FC = () => {
                   onWheel={handleWheel}
                 >
                   <img
-                    src={getImageUrl(selectedProduct.images[selectedImageIndex] || '')}
+                    src={(selectedProduct.images?.[selectedImageIndex]?.url || '')}
                     alt={selectedProduct.name}
                     className="w-full h-full object-cover transition-transform duration-200 ease-out"
                     style={{
@@ -266,7 +265,7 @@ export const ProductModal: React.FC = () => {
                           style={{ outline: 'none' }}
                         >
                           <img
-                            src={getImageUrl(img)}
+                            src={(img?.url || '')}
                             alt={`Miniatura ${idx + 1}`}
                             className="w-full h-full object-cover"
                           />

@@ -7,7 +7,12 @@ export default () => ({
     IZIPAY_ENDPOINT: process.env.IZIPAY_ENDPOINT || 'https://static.micuentaweb.pe',
     IZIPAY_MERCHANT_ID: process.env.IZIPAY_MERCHANT_ID,
     IZIPAY_ENVIRONMENT: process.env.IZIPAY_ENVIRONMENT || 'TEST', // TEST or PRODUCTION
-    // Health Check Configuration
-    PING_URL: process.env.PING_URL,
-    PING_INTERVAL_MS: parseInt(process.env.PING_INTERVAL_MS) || 600000, // 10 minutos por defecto
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+
+    // WhatsApp Configuration
+    WHATSAPP_BUSINESS_TOKEN: process.env.WHATSAPP_BUSINESS_TOKEN,
+    WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+
 })

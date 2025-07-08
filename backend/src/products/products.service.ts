@@ -4,11 +4,13 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from './schemas/product.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UploadService } from '../upload/upload.service';
 
 @Injectable()
 export class ProductsService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    private uploadService: UploadService,
   ) {}
 
   async create(createProductDto: CreateProductDto): Promise<Product> {
@@ -43,8 +45,21 @@ export class ProductsService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.productModel.findByIdAndDelete(id).exec();
-    if (!result) throw new NotFoundException('Producto no encontrado');
+    const product = await this.productModel.findById(id).exec();
+    if (!product) throw new NotFoundException('Producto no encontrado');
+    // Borrar imágenes de Cloudinary si tienen public_id
+    if (product.images && product.images.length > 0) {
+      for (const image of product.images) {
+        if (image.public_id) {
+          try {
+            await this.uploadService.deleteCloudinaryImage(image.public_id);
+          } catch (e) {
+            console.error('Error eliminando imagen de Cloudinary:', image.public_id, e);
+          }
+        }
+      }
+    }
+    await this.productModel.findByIdAndDelete(id).exec();
   }
 
   async decrementVariantStock(productId: string, size: string, color: string, quantity: number): Promise<void> {

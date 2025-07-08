@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Shield, Eye, EyeOff } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/Button';
-import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 interface AdminLoginProps {
   onLogin: () => void;

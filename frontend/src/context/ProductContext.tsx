@@ -15,9 +15,11 @@ const ProductContext = createContext<ProductContextProps>({
   refresh: () => {},
 });
 
-export const useProducts = () => useContext(ProductContext);
+interface ProductProviderProps {
+  children: ReactNode;
+}
 
-export const ProductProvider = ({ children }: { children: ReactNode }) => {
+export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,4 +48,7 @@ export const ProductProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </ProductContext.Provider>
   );
-}; 
+};
+
+// Exportar el contexto para que los hooks puedan acceder a él
+export { ProductContext }; 

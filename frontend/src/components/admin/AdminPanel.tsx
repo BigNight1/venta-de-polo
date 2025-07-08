@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, X, Loader2, Package, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Loader2, Package, TrendingUp, AlertCircle, CheckCircle, MessageCircle } from 'lucide-react';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { useAdminInfo } from '../../context/AdminInfoContext';
-import { getImageUrl } from '../../lib/getImageUrl';
+import { useAdminInfo } from '../../hooks/useAdminInfo';
 import { OrdersPanel } from './OrdersPanel';
+import { WhatsAppTest } from './WhatsAppTest';
 import Swal from 'sweetalert2';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
@@ -16,22 +16,31 @@ const variantSchema = yup.object().shape({
   color: yup.string().required('Falta el color'),
   stock: yup.number().typeError('Falta el stock').required('Falta el stock').min(1, 'El stock debe ser mayor a 0'),
 });
+const productImageSchema = yup.object().shape({
+  url: yup.string().required('Falta la URL de la imagen'),
+  public_id: yup.string().required('Falta el public_id de la imagen'),
+});
 const productSchema = yup.object().shape({
   name: yup.string().required('Falta rellenar el nombre'),
   description: yup.string().required('Falta rellenar la descripción'),
   price: yup.number().typeError('Pon un precio mayor a 0').required('Pon un precio mayor a 0').min(1, 'Pon un precio mayor a 0'),
-  images: yup.array().of(yup.string().required('Falta agregar al menos una imagen')).min(1, 'Falta agregar al menos una imagen').required(),
+  images: yup.array().of(productImageSchema).min(1, 'Falta agregar al menos una imagen').required(),
   category: yup.mixed<'hombre' | 'mujer' | 'ninos'>().oneOf(['hombre', 'mujer', 'ninos'], 'Falta seleccionar la categoría').required('Falta seleccionar la categoría'),
   variants: yup.array().of(variantSchema).min(1, 'Debes agregar al menos una variante').required(),
   inStock: yup.boolean().required(),
   featured: yup.boolean().required()
 });
 
+interface ProductImage {
+  url: string;
+  public_id: string;
+}
+
 interface ProductForm {
   name: string;
   description: string;
   price: number;
-  images: string[];
+  images: ProductImage[];
   category: 'hombre' | 'mujer' | 'ninos';
   variants: { size: string; color: string; stock: number }[];
   inStock: boolean;
@@ -39,7 +48,7 @@ interface ProductForm {
 }
 
 export const AdminPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'analytics' | 'orders'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'analytics' | 'orders' | 'whatsapp'>('overview');
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const {
@@ -56,6 +65,7 @@ export const AdminPanel: React.FC = () => {
     createProduct,
     updateProduct,
     deleteProduct,
+    fetchProducts, // <-- agregar fetchProducts
   } = useAdminInfo();
 
   // --- VARIANTES ---
@@ -77,6 +87,8 @@ export const AdminPanel: React.FC = () => {
   const [imageUploading, setImageUploading] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState('');
+  const [deletingImageIndex, setDeletingImageIndex] = useState<number | null>(null);
+  const [deleteImageError, setDeleteImageError] = useState('');
 
   const defaultValues: ProductForm = {
     name: '',
@@ -134,13 +146,15 @@ export const AdminPanel: React.FC = () => {
     try {
       if (editingProduct && editingProduct._id) {
         await updateProduct(editingProduct._id, data);
+        await fetchProducts();
         setSaveSuccess('Producto actualizado correctamente.');
       } else {
         await createProduct(data);
+        await fetchProducts();
         setSaveSuccess('Producto guardado correctamente.');
+        resetForm(); // Limpiar el formulario tras crear
       }
       setTimeout(() => setSaveSuccess(''), 2000);
-      formMethods.reset();
     } catch (err: any) {
       setSaveError(err?.message || 'Error al guardar el producto.');
       console.error('Error al guardar producto:', err);
@@ -177,41 +191,35 @@ export const AdminPanel: React.FC = () => {
       setImageUploading(false);
       return;
     }
-    const token = localStorage.getItem('admin_token');
-    const uploadedPaths: string[] = [];
+    // Cloudinary config
+    const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+    const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+    const folder = 'Venta_Polos';
+    const uploadedImages: { url: string; public_id: string }[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const formDataFile = new FormData();
-      formDataFile.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', uploadPreset);
+      formData.append('folder', folder);
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/upload`, {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
           method: 'POST',
-          body: formDataFile,
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
         });
-        if (res.status === 401) {
-          setImageUploadError('No autorizado para subir imágenes. Inicia sesión como admin.');
-          setImageUploading(false);
-          return;
-        }
-        if (!res.ok) {
-          setImageUploadError('Error al subir la imagen.');
-          setImageUploading(false);
-          return;
-        }
         const data = await res.json();
-        if (data.filePath) {
-          uploadedPaths.push(data.filePath);
+        if (data.secure_url && data.public_id) {
+          uploadedImages.push({ url: data.secure_url, public_id: data.public_id });
         } else {
-          setImageUploadError('No se recibió la ruta de la imagen.');
+          setImageUploadError('No se recibió la URL o el public_id de la imagen.');
         }
       } catch (err) {
-        setImageUploadError('Error al subir la imagen.');
+        setImageUploadError('Error al subir la imagen a Cloudinary.');
       }
     }
-    if (uploadedPaths.length > 0) {
+    if (uploadedImages.length > 0) {
       const currentImages = formMethods.getValues('images') || [];
-      const newImages = [...currentImages, ...uploadedPaths];
+      const newImages = [...currentImages, ...uploadedImages];
       formMethods.setValue('images', newImages, { shouldValidate: true });
     }
     setImageUploading(false);
@@ -319,7 +327,7 @@ export const AdminPanel: React.FC = () => {
           {products.slice().map((product, index) => (
             <div key={`recent-${product._id}-${index}`} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <img
-                src={getImageUrl(product.images[0] || '')}
+                src={(product.images[0]?.url || '')}
                 alt={product.name}
                 className="w-12 h-12 rounded-lg object-cover"
               />
@@ -373,7 +381,7 @@ export const AdminPanel: React.FC = () => {
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                     <img
-                      src={getImageUrl(product.images[0] || '')}
+                      src={(product.images[0]?.url || '')}
                       alt={product.name}
                       className="w-full h-full object-cover"
                     />
@@ -497,21 +505,43 @@ export const AdminPanel: React.FC = () => {
                     {formMethods.getValues('images') && formMethods.getValues('images').map((image, index) => (
                       <div key={index} className="relative flex-shrink-0">
                         <img
-                          src={getImageUrl(image)}
+                          src={(image.url)}
                           alt={`Imagen ${index + 1}`}
                           className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80"
-                          onClick={() => setPreviewImage(image)}
+                          onClick={() => setPreviewImage(image.url)}
                         />
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
+                            setDeleteImageError('');
+                            setDeletingImageIndex(index);
                             const images = formMethods.getValues('images') || [];
+                            const imageToDelete = images[index];
+                            // Eliminar de Cloudinary si tiene public_id
+                            if (imageToDelete && imageToDelete.public_id) {
+                              try {
+                                const token = localStorage.getItem('admin_token');
+                                // Normalizar public_id: reemplazar espacios por guiones bajos
+                                const normalizedPublicId = imageToDelete.public_id.replace(/\s+/g, '_');
+                                const res = await fetch(`${import.meta.env.VITE_API_URL}/upload/cloudinary/${normalizedPublicId}`, {
+                                  method: 'DELETE',
+                                  headers: token ? { Authorization: `Bearer ${token}` } : {},
+                                });
+                                if (!res.ok) {
+                                  setDeleteImageError('Error al eliminar la imagen de Cloudinary');
+                                }
+                              } catch (err) {
+                                setDeleteImageError('Error al eliminar la imagen de Cloudinary');
+                              }
+                            }
                             const newImages = images.filter((_, i) => i !== index);
                             formMethods.setValue('images', newImages, { shouldValidate: true });
+                            setDeletingImageIndex(null);
                           }}
                           className="absolute -top-[0px] -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow"
+                          disabled={deletingImageIndex === index}
                         >
-                          ×
+                          {deletingImageIndex === index ? <Loader2 className="h-4 w-4 animate-spin" /> : '×'}
                         </button>
                       </div>
                     ))}
@@ -529,13 +559,14 @@ export const AdminPanel: React.FC = () => {
                   </div>
                   {imageUploading && <div className="text-blue-500 text-xs mt-1">Subiendo imagen...</div>}
                   {imageUploadError && <div className="text-red-500 text-xs mt-1">{imageUploadError}</div>}
+                  {deleteImageError && <div className="text-red-500 text-xs mt-1">{deleteImageError}</div>}
                 </div>
 
                 {/* Modal de previsualización de imagen */}
                 {previewImage && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70" onClick={() => setPreviewImage(null)}>
                     <div className="relative">
-                      <img src={getImageUrl(previewImage)} alt="Vista previa" className="max-w-[90vw] max-h-[80vh] rounded shadow-lg" />
+                      <img src={(previewImage)} alt="Vista previa" className="max-w-[90vw] max-h-[80vh] rounded shadow-lg" />
                       <button
                         type="button"
                         onClick={() => setPreviewImage(null)}
@@ -718,6 +749,17 @@ export const AdminPanel: React.FC = () => {
               >
                 Pedidos
               </button>
+              <button
+                onClick={() => setActiveTab('whatsapp')}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === 'whatsapp'
+                    ? 'bg-white text-green-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <MessageCircle className="h-4 w-4 mr-1" />
+                WhatsApp
+              </button>
             </div>
           </div>
         </div>
@@ -727,6 +769,7 @@ export const AdminPanel: React.FC = () => {
         {activeTab === 'overview' && renderOverview()}
         {activeTab === 'products' && renderProducts()}
         {activeTab === 'orders' && <OrdersPanel />}
+        {activeTab === 'whatsapp' && <WhatsAppTest />}
       </div>
     </div>
   );

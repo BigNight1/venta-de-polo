@@ -4,7 +4,7 @@ import { ProductCard } from './ProductCard';
 import { Sidebar } from '../layout/Sidebar';
 import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
-import { useProducts } from '../../context/ProductContext';
+import { useProducts } from '../../hooks/useProducts';
 
 export const ProductGrid: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

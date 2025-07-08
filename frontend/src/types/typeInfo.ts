@@ -1,4 +1,4 @@
-import type { Product } from './index';
+import type { Product, ProductImage } from './index';
 
 // Interfaces para el AdminInfoContext
 export interface AdminInfoContextType {
@@ -51,7 +51,7 @@ export interface ProductFormData {
   name: string;
   description: string;
   price: number;
-  images: string[];
+  images: ProductImage[];
   category: 'hombre' | 'mujer' | 'ninos';
   variants: { size: string; color: string; stock: number }[];
   inStock: boolean;

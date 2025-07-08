@@ -3,7 +3,6 @@ import { CheckCircle, Package, Truck, Mail, Phone, Download, ArrowRight, Calenda
 import { useStore } from '../../store/useStore';
 import { formatPrice, formatDate } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { getImageUrl } from '../../lib/getImageUrl';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 
@@ -183,11 +182,20 @@ export const OrderConfirmation: React.FC = () => {
 
                             <div className="space-y-4">
                                 {orderData.items.map((item: any, index: number) => {
+                                    let imageSrc = '';
+                                    if (Array.isArray(item.product.images) && item.product.images.length > 0) {
+                                      if (typeof item.product.images[0] === 'string') {
+                                        imageSrc = item.product.images[0];
+                                      } else if (item.product.images[0]?.url) {
+                                        imageSrc = item.product.images[0].url;
+                                      }
+                                    }
+                                    if (!imageSrc) imageSrc = '/placeholder.png';
                                     return (
                                         <div key={index} className="flex items-center space-x-4 py-4 border-b border-gray-100 last:border-b-0">
                                             <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
                                                 <img
-                                                    src={getImageUrl(item.product.images?.[0] || '')}
+                                                    src={imageSrc}
                                                     alt={item.product.name}
                                                     className="w-full h-full object-cover"
                                                 />

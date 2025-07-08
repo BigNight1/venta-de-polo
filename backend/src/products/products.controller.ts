@@ -36,45 +36,4 @@ export class ProductsController {
     return this.productsService.remove(id);
   }
 
-  // Endpoint para insertar productos de ejemplo
-  @Post('seed')
-  async seedProducts() {
-    const exampleProducts: CreateProductDto[] = [
-      {
-        name: 'Polo Clásico Algodón',
-        description: 'Polo de algodón suave y cómodo',
-        price: 45,
-        images: ['url1'],
-        category: 'hombre',
-        variants: [
-          { size: 'S', color: 'Azul', stock: 5 },
-          { size: 'M', color: 'Azul', stock: 3 },
-          { size: 'L', color: 'Rojo', stock: 2 },
-        ],
-        inStock: true,
-        featured: true,
-        createdAt: '2024-01-15',
-      },
-      {
-        name: 'Polo Deportivo Dri-Fit',
-        description: 'Polo deportivo con tecnología que absorbe la humedad. Ideal para actividades físicas y deportes.',
-        price: 39.99,
-        images: ['https://images.pexels.com/photos/5668772/pexels-photo-5668772.jpeg'],
-        category: 'hombre',
-        variants: [
-          { size: 'S', color: 'Rojo', stock: 8 },
-          { size: 'M', color: 'Azul', stock: 12 },
-          { size: 'L', color: 'Verde', stock: 10 },
-        ],
-        inStock: true,
-        featured: false,
-        createdAt: '2024-01-20',
-      },
-    ];
-    const results = [];
-    for (const product of exampleProducts) {
-      results.push(await this.productsService.create(product));
-    }
-    return results;
-  }
 } 

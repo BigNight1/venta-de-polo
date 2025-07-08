@@ -88,6 +88,10 @@ export class Order extends Document {
     email: string;
     displayName: string;
   };
+
+  // Timestamps automáticos (createdAt, updatedAt)
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order); 

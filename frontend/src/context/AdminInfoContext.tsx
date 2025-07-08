@@ -1,21 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext,  useState, useEffect, ReactNode } from 'react';
 import type { Product } from '../types';
 import type { 
   AdminInfoContextType, 
   AdminAnalytics, 
-  CategoryCount,
 } from '../types/typeInfo';
-import { useAdminAuth } from './AdminAuthContext';
+import { useAdminAuth } from '../hooks/useAdminAuth';
 
 const AdminInfoContext = createContext<AdminInfoContextType | undefined>(undefined);
-
-export const useAdminInfo = () => {
-  const context = useContext(AdminInfoContext);
-  if (!context) {
-    throw new Error('useAdminInfo must be used within an AdminInfoProvider');
-  }
-  return context;
-};
 
 interface AdminInfoProviderProps {
   children: ReactNode;
@@ -103,7 +94,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
   };
 
   // Actualizar producto
-  const updateProduct = async (productId: string, productData: Partial<Product>) => {
+  const updateProduct = async (productId: string, productData: Partial<Product>): Promise<void> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -227,4 +218,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
       {children}
     </AdminInfoContext.Provider>
   );
-}; 
+};
+
+// Exportar el contexto para que los hooks puedan acceder a él
+export { AdminInfoContext }; 

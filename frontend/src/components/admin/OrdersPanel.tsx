@@ -20,7 +20,8 @@ import {
 } from 'lucide-react';
 import { formatPrice, formatDate } from '../../lib/utils';
 import { Button } from '../ui/Button';
-import { getImageUrl } from '../../lib/getImageUrl';
+import type { ProductImage } from '../../types';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
 
 // Tipos para los pedidos
 interface OrderItem {
@@ -28,7 +29,8 @@ interface OrderItem {
   product: {
     id: string;
     name: string;
-    images: string[];
+    images: ProductImage[];
+    price?: number;
   };
   sizeId: string;
   sizeName: string;
@@ -109,12 +111,19 @@ export const OrdersPanel: React.FC = () => {
   const [ordersPerPage] = useState(10);
   const [error, setError] = useState('');
 
+  const { token } = useAdminAuth();
+
   // Cargar pedidos del backend
   const loadOrders = async () => {
     setIsLoadingOrders(true);
     setError('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/orders`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (!response.ok) {
         throw new Error('Error al cargar los pedidos');
       }
@@ -213,6 +222,7 @@ export const OrdersPanel: React.FC = () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
       });
@@ -654,9 +664,10 @@ export const OrdersPanel: React.FC = () => {
                           console.warn('Item sin product:', item);
                         }
                         const productName = item.product?.name || 'Producto eliminado';
-                        const productImage = item.product?.images[0]
-                        ? getImageUrl(item.product.images[0])
-                        : '/placeholder.png';
+                        const productImage = Array.isArray(item.product?.images) && item.product.images[0]?.url
+                          ? item.product.images[0].url
+                          : '/placeholder.png';
+                        console.log(item.product);
                         return (
                           <div key={item.id || idx} className="bg-white border border-gray-200 rounded-lg p-4">
                             <div className="flex items-center space-x-4">

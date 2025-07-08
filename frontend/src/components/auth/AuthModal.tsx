@@ -3,7 +3,7 @@ import { X, Mail, Lock, User } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { Button } from '../ui/Button';
 import { useAuth } from '../../context/FirebaseAuthContext';
-import { useAdminAuth } from '../../context/AdminAuthContext';
+import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 
 export const AuthModal: React.FC = () => {

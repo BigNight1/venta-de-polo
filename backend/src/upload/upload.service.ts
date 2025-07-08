@@ -4,12 +4,21 @@ import { Model } from 'mongoose';
 import { Product, ProductDocument } from '../products/schemas/product.schema';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import { ConfigService } from '@nestjs/config';
+import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class UploadService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    cloudinary.config({
+      cloud_name: this.configService.get('CLOUDINARY_CLOUD_NAME'),
+      api_key: this.configService.get('CLOUDINARY_API_KEY'),
+      api_secret: this.configService.get('CLOUDINARY_API_SECRET'),
+    });
+  }
 
   async cleanupOrphanedImages(): Promise<any> {
     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
@@ -22,8 +31,12 @@ export class UploadService {
       const usedImages = new Set<string>();
       
       products.forEach(product => {
-        if (product.images && product.images.length > 0 && product.images[0].startsWith('/uploads/')) {
-          usedImages.add(path.basename(product.images[0]));
+        if (product.images && product.images.length > 0) {
+          product.images.forEach(image => {
+            if (image.url && image.url.startsWith('/uploads/')) {
+              usedImages.add(path.basename(image.url));
+            }
+          });
         }
       });
 
@@ -73,8 +86,12 @@ export class UploadService {
       const usedImages = new Set<string>();
       
       products.forEach(product => {
-        if (product.images && product.images.length > 0 && product.images[0].startsWith('/uploads/')) {
-          usedImages.add(path.basename(product.images[0]));
+        if (product.images && product.images.length > 0) {
+          product.images.forEach(image => {
+            if (image.url && image.url.startsWith('/uploads/')) {
+              usedImages.add(path.basename(image.url));
+            }
+          });
         }
       });
 
@@ -86,6 +103,20 @@ export class UploadService {
     } catch (error) {
       console.error('Error obteniendo estadísticas:', error);
       return { totalFiles: 0, totalSize: 0, usedFiles: 0 };
+    }
+  }
+
+  async deleteCloudinaryImage(publicId: string): Promise<any> {
+    try {
+      const result = await cloudinary.uploader.destroy(publicId);
+      if (result.result === 'ok' || result.result === 'not found') {
+        return { message: 'Imagen eliminada de Cloudinary', result };
+      } else {
+        return { message: 'No se pudo eliminar la imagen', result };
+      }
+    } catch (error) {
+      console.error('Error eliminando imagen de Cloudinary:', error);
+      throw new Error('Error al eliminar la imagen de Cloudinary');
     }
   }
 } 

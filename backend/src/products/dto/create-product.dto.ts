@@ -14,6 +14,16 @@ class VariantDto {
   stock: number;
 }
 
+class ProductImageDto {
+  @IsString({ message: 'La URL de la imagen debe ser un texto' })
+  @IsNotEmpty({ message: 'Falta la URL de la imagen' })
+  url: string;
+
+  @IsString({ message: 'El public_id de la imagen debe ser un texto' })
+  @IsNotEmpty({ message: 'Falta el public_id de la imagen' })
+  public_id: string;
+}
+
 export class CreateProductDto {
   @IsString({ message: 'El nombre debe ser un texto' })
   @IsNotEmpty({ message: 'Falta rellenar el nombre' })
@@ -27,9 +37,9 @@ export class CreateProductDto {
   price: number;
 
   @IsArray({ message: 'Las imágenes deben ser un arreglo' })
-  @IsString({ each: true, message: 'Cada imagen debe ser una URL de texto' })
-  @IsNotEmpty({ each: true, message: 'Falta agregar al menos una imagen' })
-  images: string[];
+  @ValidateNested({ each: true })
+  @Type(() => ProductImageDto)
+  images: ProductImageDto[];
 
   @IsString({ message: 'La categoría debe ser un texto' })
   @IsNotEmpty({ message: 'Falta seleccionar la categoría' })

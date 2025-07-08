@@ -1,4 +1,4 @@
-import { Controller, Post, Delete, Get, UseInterceptors, UploadedFile, UseGuards, Param } from '@nestjs/common';
+import { Controller, Post, Delete, Get, UseInterceptors, UploadedFile, UseGuards, Param, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -61,5 +61,11 @@ export class UploadController {
   @Get('stats')
   async getUploadStats() {
     return this.uploadService.getUploadStats();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('cloudinary/:publicId(*)')
+  async deleteCloudinaryImage(@Param('publicId') publicId: string) {
+    return this.uploadService.deleteCloudinaryImage(publicId);
   }
 } 
