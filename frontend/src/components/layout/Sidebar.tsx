@@ -66,7 +66,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <div className={`
         fixed top-0 left-0 h-full w-80 bg-white shadow-xl z-50 transform transition-transform duration-300 ease-in-out
-        lg:relative lg:transform-none lg:shadow-none lg:w-64 lg:border-r lg:border-gray-200
+        lg:relative lg:transform-none lg:shadow-none lg:w-64 lg:border-r lg:border-gray-200 z-30
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-6 h-full overflow-y-auto">

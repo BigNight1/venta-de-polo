@@ -29,6 +29,13 @@ export class ProductsService {
   }
 
   async findAll(): Promise<Product[]> {
+    // Solo productos con al menos una variante con stock > 0
+    return this.productModel.find({
+      variants: { $elemMatch: { stock: { $gt: 0 } } }
+    }).exec();
+  }
+
+  async findAllAdmin(): Promise<Product[]> {
     return this.productModel.find().exec();
   }
 

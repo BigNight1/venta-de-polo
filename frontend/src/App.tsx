@@ -4,7 +4,6 @@ import { Footer } from './components/layout/Footer';
 import { ProductGrid } from './components/product/ProductGrid';
 import { ProductModal } from './components/product/ProductModal';
 import { CartPanel } from './components/cart/CartPanel';
-import { AuthModal } from './components/auth/AuthModal';
 import { MyOrders } from './components/pages/MyOrders';
 import { About } from './components/pages/About';
 import { Contact } from './components/pages/Contact';
@@ -17,7 +16,7 @@ import { OrderConfirmation } from './components/checkout/OrderConfirmation';
 function AppContent() {
   const { selectedProduct } = useStore();
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/checkout');
+  const isAdminRoute = location.pathname.startsWith('/Dashboard') || location.pathname.startsWith('/checkout');
 
   return (
     <div className="min-h-screen  bg-gray-50 flex flex-col">
@@ -33,7 +32,7 @@ function AppContent() {
           <Route path="/MisPedidos" element={<MyOrders />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/order/:orderId" element={<OrderConfirmation />} />
-          <Route path="/admin/*" element={<AdminRoute />} />
+          <Route path="/Dashboard/*" element={<AdminRoute />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
@@ -44,7 +43,6 @@ function AppContent() {
       {/* Modals */}
       {selectedProduct && <ProductModal />}
       <CartPanel />
-      <AuthModal />
     </div>
   );
 }

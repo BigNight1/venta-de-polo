@@ -1,5 +1,4 @@
 import React from 'react';
-import { AdminLogin } from './AdminLogin';
 import { AdminPanel } from './AdminPanel';
 import { useAdminAuth } from '../../hooks/useAdminAuth';
 import { Navigate } from 'react-router-dom';

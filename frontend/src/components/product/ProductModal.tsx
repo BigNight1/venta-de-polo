@@ -384,7 +384,7 @@ export const ProductModal: React.FC = () => {
                   <Button
                     variant="secondary"
                     onClick={handleBuyNow}
-                    disabled={!selectedProduct.inStock || !selectedSizeId || !selectedColorId}
+                    disabled={!selectedVariant || selectedVariant.stock === 0 || !selectedSizeId || !selectedColorId}
                     className="flex-1"
                   >
                     Comprar ahora
@@ -393,7 +393,7 @@ export const ProductModal: React.FC = () => {
 
                 {/* Stock Status */}
                 <div className="text-sm text-gray-600">
-                  {selectedProduct.inStock ? (
+                  {selectedVariant && selectedVariant.stock > 0 ? (
                     <span className="text-green-600">✓ En stock</span>
                   ) : (
                     <span className="text-red-600">✗ Agotado</span>

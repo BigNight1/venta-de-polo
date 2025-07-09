@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -16,18 +16,15 @@ export class AuthService {
       console.log('Usuario no encontrado');
     } else {
       const match = await bcrypt.compare(pass, user.password);
-      console.log('¿Password coincide?', match);
     }
     if (user && await bcrypt.compare(pass, user.password)) {
       const { password, ...result } = user as any;
-      console.log('Usuario validado:', result);
       return result;
     }
     return null;
   }
 
   async login(user: any) {
-    console.log('login - user:', user);
     const u = user._doc ? user._doc : user;
     const payload = {
       username: u.username,

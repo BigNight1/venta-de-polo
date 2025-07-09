@@ -14,5 +14,6 @@ export default () => ({
     // WhatsApp Configuration
     WHATSAPP_BUSINESS_TOKEN: process.env.WHATSAPP_BUSINESS_TOKEN,
     WHATSAPP_PHONE_NUMBER_ID: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    NODE_ENV: process.env.NODE_ENV,
 
 })

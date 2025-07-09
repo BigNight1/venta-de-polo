@@ -40,6 +40,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     setSelectedProduct(product);
   };
 
+  // Determinar si el producto está agotado (todas las variantes stock 0)
+  const isOutOfStock = !product.variants.some(v => v.stock > 0);
+
   return (
     <div className="group relative bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow duration-200 overflow-hidden will-change-transform">
       {/* Image Container - Optimizado para mejor rendimiento */}
@@ -75,7 +78,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </div>
         )}
         
-        {!product.inStock && (
+        {isOutOfStock && (
           <div className="absolute top-3 right-3 bg-red-500 text-white px-2 py-1 text-xs font-medium rounded-md shadow-sm">
             Agotado
           </div>
@@ -156,11 +159,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <Button
             size="sm"
             onClick={handleAddToCart}
-            disabled={!product.inStock}
+            disabled={isOutOfStock}
             className="min-w-[100px]"
           >
             <ShoppingCart className="h-4 w-4 mr-1" />
-            {product.inStock ? 'Agregar' : 'Agotado'}
+            {isOutOfStock ? 'Agotado' : 'Agregar'}
           </Button>
         </div>
       </div>

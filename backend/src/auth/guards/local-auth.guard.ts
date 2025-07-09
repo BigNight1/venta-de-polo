@@ -8,7 +8,6 @@ export class LocalAuthGuard extends AuthGuard('local') {
     if (req.body && req.body.email) {
       req.body.username = req.body.email;
     }
-    console.log('LocalAuthGuard - body:', req.body);
     return super.canActivate(context);
   }
 } 

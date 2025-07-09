@@ -20,7 +20,6 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req) {
-    console.log('Entró al endpoint /auth/login');
     return this.authService.login(req.user);
   }
 

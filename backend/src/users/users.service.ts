@@ -26,7 +26,6 @@ export class UsersService {
   }
 
   async findOne(identifier: string): Promise<User | undefined> {
-    console.log('Buscando usuario por:', identifier);
     const user = await this.userModel.findOne({
       $or: [
         { username: identifier },

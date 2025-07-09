@@ -40,7 +40,7 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/products`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/products/admin/all`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Error al obtener productos');
@@ -173,9 +173,9 @@ export const AdminInfoProvider: React.FC<AdminInfoProviderProps> = ({ children }
   // Analytics
   const analytics: AdminAnalytics = {
     totalProducts: products.length,
-    inStockProducts: products.filter(p => p.inStock).length,
+    inStockProducts: products.filter(p => p.variants && p.variants.length > 0 && p.variants.some(v => v.stock > 0)).length,
     featuredProducts: products.filter(p => p.featured).length,
-    outOfStockProducts: products.filter(p => !p.inStock).length,
+    outOfStockProducts: products.filter(p => p.variants && p.variants.length > 0 && p.variants.every(v => v.stock === 0)).length,
     averagePrice: products.length > 0 ? products.reduce((sum, p) => sum + p.price, 0) / products.length : 0,
     categoriesCount: {
       hombre: products.filter(p => p.category === 'hombre').length,

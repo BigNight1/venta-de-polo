@@ -145,8 +145,7 @@ src/
 │   │   └── ProductModal.tsx
 │   └── ui/
 │       └── Button.tsx
-├── data/
-│   └── mockProducts.ts
+├── 
 ├── lib/
 │   ├── supabase.ts
 │   └── utils.ts

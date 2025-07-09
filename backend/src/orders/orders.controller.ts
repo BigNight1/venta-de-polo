@@ -66,4 +66,46 @@ Este es un mensaje de prueba para verificar que WhatsApp está funcionando corre
       return { error: error.message };
     }
   }
+
+  // Endpoint para probar la plantilla de confirmación de compra
+  @Post('test-whatsapp-template')
+  async testWhatsAppTemplate(@Body() body: { phone: string; nombre: string; orderId: string }) {
+    console.log('POST /orders/test-whatsapp-template', body);
+    
+    if (process.env.NODE_ENV === 'production') {
+      console.log('Intento de uso en producción, bloqueado');
+      return { error: 'Este endpoint solo está disponible en desarrollo' };
+    }
+
+    try {
+      // Formatear el número de teléfono
+      const formattedPhone = this.ordersService.formatPhoneNumber(body.phone);
+      
+      console.log('Enviando plantilla de confirmación a:', formattedPhone);
+      console.log('Nombre:', body.nombre);
+      console.log('Order ID:', body.orderId);
+      
+      await this.ordersService.sendOrderConfirmationTemplate(formattedPhone, body.nombre, body.orderId);
+      
+      return { 
+        success: true, 
+        message: 'Plantilla de confirmación enviada correctamente',
+        data: {
+          phone: formattedPhone,
+          nombre: body.nombre,
+          orderId: body.orderId
+        }
+      };
+    } catch (error) {
+      console.error('Error enviando plantilla de confirmación:', error);
+      return { 
+        error: error.message,
+        details: {
+          phone: body.phone,
+          nombre: body.nombre,
+          orderId: body.orderId
+        }
+      };
+    }
+  }
 } 
