@@ -40,6 +40,7 @@ export const ProductProvider: React.FC<ProductProviderProps> = ({ children }) =>
   };
 
   useEffect(() => {
+
     fetchProducts();
   }, []);
 

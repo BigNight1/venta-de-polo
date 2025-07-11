@@ -21,6 +21,7 @@ export interface IzipayPaymentData {
   amount: number;
   currency: string;
   items: any[];
+  firebaseUser?: any;
 }
 
 export interface IzipayFormTokenResponse {
@@ -42,7 +43,7 @@ export class IzipayService {
   private readonly merchantId: string;
   private readonly environment: string;
   private readonly hmacKey: string;
-  private orderItemsMap = new Map<string, { items: any[]; shipping: any; user: any }>(); // orderId -> datos completos
+  private orderItemsMap = new Map<string, { items: any[]; shipping: any; user: any; firebaseUser?: any }>(); // orderId -> datos completos
 
   constructor(
     private configService: ConfigService,
@@ -59,6 +60,7 @@ export class IzipayService {
   }
 
   async createFormToken(paymentData: IzipayPaymentData): Promise<IzipayFormTokenResponse> {
+    console.log('[IZIPAY][createFormToken] paymentData:', paymentData);
     // Forzar country a 'PE' y currency a 'PEN'
     const countryCode = 'PE';
     const currency = paymentData.currency && paymentData.currency.trim() ? paymentData.currency : 'PEN';
@@ -137,8 +139,10 @@ export class IzipayService {
           name: paymentData.firstName + ' ' + paymentData.lastName,
           email: paymentData.email,
           phone: paymentData.phoneNumber,
-        }
+        },
+        firebaseUser: paymentData.firebaseUser || undefined,
       });
+      console.log('[IZIPAY][createFormToken] orderItemsMap:', this.orderItemsMap.get(paymentData.orderId));
     }
 
     return {
@@ -166,12 +170,13 @@ export class IzipayService {
     }
     const isPaid = decodedAnswer.orderStatus === 'PAID';
     let orderId: string | undefined = undefined;
-    let extraData: { items?: any[]; shipping?: any; user?: any } = {};
+    let extraData: { items?: any[]; shipping?: any; user?: any; firebaseUser?: any } = {};
     if (isPaid) {
       orderId = decodedAnswer.orderDetails?.orderId || decodedAnswer.orderId;
       // Recuperar los datos guardados temporalmente
       const mapData = orderId ? this.orderItemsMap.get(orderId) : undefined;
       extraData = (mapData && typeof mapData === 'object' && !Array.isArray(mapData)) ? mapData : { items: [], shipping: {}, user: {} };
+      console.log('[IZIPAY][validatePayment] Recuperado de orderItemsMap:', extraData);
       // Eliminar del map para liberar memoria
       if (orderId) this.orderItemsMap.delete(orderId);
       const order: Partial<Order> = {
@@ -186,7 +191,9 @@ export class IzipayService {
         },
         status: 'pending',
         estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        firebaseUser: extraData.firebaseUser || undefined,
       };
+      console.log('[IZIPAY][validatePayment] Orden a crear:', order);
       await this.ordersService.create(order);
       // Descontar stock
       for (const item of extraData.items || []) {

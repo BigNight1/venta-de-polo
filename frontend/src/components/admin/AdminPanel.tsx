@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "../../lib/utils";
 import { Button } from "../ui/Button";
+import { COLOR_MAP } from "../../lib/colors";
 import { useAdminInfo } from "../../hooks/useAdminInfo";
 import { OrdersPanel } from "./OrdersPanel";
 import Swal from "sweetalert2";
@@ -73,6 +74,10 @@ interface ProductForm {
   variants: { size: string; color: string; stock: number }[];
   inStock: boolean;
   featured: boolean;
+  material?: string;
+  cuidado?: string;
+  origen?: string;
+  estilo?: string;
 }
 
 export const AdminPanel: React.FC = () => {
@@ -99,18 +104,6 @@ export const AdminPanel: React.FC = () => {
   } = useAdminInfo();
 
   // --- VARIANTES ---
-  const COLOR_MAP: Record<string, string> = {
-    BLANCO: "#FFFFFF",
-    NEGRO: "#000000",
-    ROJO: "#DC2626",
-    AZUL: "#2563EB",
-    VERDE: "#16A34A",
-    ROSA: "#EC4899",
-    AMARILLO: "#EAB308",
-    MORADO: "#9333EA",
-    // Puedes agregar más colores estándar aquí
-  };
-
   const [variantForm, setVariantForm] = useState({
     size: "",
     color: "",
@@ -169,7 +162,7 @@ export const AdminPanel: React.FC = () => {
       return;
     appendVariant({
       size: variantForm.size.toUpperCase(),
-      color: variantForm.color,
+      color: variantForm.color.trim().toUpperCase(),
       stock: variantForm.stock,
     });
     setVariantForm({ size: "", color: "", stock: 1 });
@@ -179,7 +172,7 @@ export const AdminPanel: React.FC = () => {
     removeVariant(editingVariantIdx);
     appendVariant({
       size: variantForm.size.toUpperCase(),
-      color: variantForm.color,
+      color: variantForm.color.trim().toUpperCase(),
       stock: variantForm.stock,
     });
     setEditingVariantIdx(null);
@@ -599,35 +592,39 @@ export const AdminPanel: React.FC = () => {
                     placeholder="Descripción del producto"
                   />
                 </div>
-
+                {/* Características */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Precio (S/) *
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Material</label>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      {...formMethods.register("price", {
-                        valueAsNumber: true,
-                      })}
+                      {...formMethods.register("material")}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                      placeholder="Ej: 100% algodón"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Categoría *
-                    </label>
-                    <select
-                      {...formMethods.register("category")}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cuidado</label>
+                    <input
+                      {...formMethods.register("cuidado")}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-                    >
-                      <option value="hombre">Hombre</option>
-                      <option value="mujer">Mujer</option>
-                      <option value="ninos">Niños</option>
-                    </select>
+                      placeholder="Ej: Lavable en máquina"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Origen</label>
+                    <input
+                      {...formMethods.register("origen")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                      placeholder="Ej: Fabricado en Perú"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estilo</label>
+                    <input
+                      {...formMethods.register("estilo")}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                      placeholder="Ej: Casual, Formal, Deportivo"
+                    />
                   </div>
                 </div>
 

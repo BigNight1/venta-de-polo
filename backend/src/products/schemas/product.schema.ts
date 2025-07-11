@@ -51,6 +51,18 @@ export class Product {
   featured: boolean;
 
   @Prop()
+  material?: string;
+
+  @Prop()
+  cuidado?: string;
+
+  @Prop()
+  origen?: string;
+
+  @Prop()
+  estilo?: string;
+
+  @Prop()
   createdAt?: string;
 }
 

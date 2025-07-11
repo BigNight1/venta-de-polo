@@ -59,5 +59,21 @@ export class CreateProductDto {
 
   @IsString()
   @IsOptional()
+  material?: string;
+
+  @IsString()
+  @IsOptional()
+  cuidado?: string;
+
+  @IsString()
+  @IsOptional()
+  origen?: string;
+
+  @IsString()
+  @IsOptional()
+  estilo?: string;
+
+  @IsString()
+  @IsOptional()
   createdAt?: string;
 } 

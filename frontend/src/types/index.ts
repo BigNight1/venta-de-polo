@@ -20,6 +20,12 @@ export interface Product {
   inStock: boolean;
   featured: boolean;
   createdAt: string;
+  material?: string;
+  cuidado?: string;
+  origen?: string;
+  estilo?: string;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export interface CartItem {

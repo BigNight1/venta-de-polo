@@ -197,7 +197,7 @@ export const OrderConfirmation: React.FC = () => {
                                                 <img
                                                     src={imageSrc}
                                                     alt={item.product.name}
-                                                    className="w-full h-full object-cover"
+                                                    className="w-full h-full object-contain"
                                                 />
                                             </div>
                                             <div className="flex-1 min-w-0">
@@ -329,7 +329,7 @@ export const OrderConfirmation: React.FC = () => {
                                         <img
                                             src="https://images.pexels.com/photos/5668858/pexels-photo-5668858.jpeg"
                                             alt="Producto relacionado"
-                                            className="w-10 h-10 rounded object-cover"
+                                            className="w-10 h-10 rounded object-contain"
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="text-xs font-medium text-gray-900 truncate">

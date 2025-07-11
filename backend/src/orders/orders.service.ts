@@ -12,11 +12,22 @@ export class OrdersService {
   ) {}
 
   async create(order: Partial<Order>) {
+    // Buscar si ya existe una orden con ese orderId
+    let existing = order.orderId ? await this.orderModel.findOne({ orderId: order.orderId }) : null;
+    if (existing) {
+      // Si viene firebaseUser y la orden existente no lo tiene, actualizarla
+      if (order.firebaseUser && !existing.firebaseUser) {
+        existing.firebaseUser = order.firebaseUser;
+        await existing.save();
+      }
+      // No enviar WhatsApp ni crear otra orden
+      return existing;
+    }
+    // Crear nueva orden
     // Calcular subtotal
     let subtotal = 0;
     if (order.items && Array.isArray(order.items)) {
       subtotal = order.items.reduce((sum, item) => {
-        // Si el item ya trae el precio, úsalo; si no, busca el producto
         if (item.unitPrice) {
           return sum + (item.unitPrice * (item.quantity || 1));
         } else if (item.product && item.product.price) {
@@ -25,11 +36,8 @@ export class OrdersService {
         return sum;
       }, 0);
     }
-    // Costo de envío: usa el que viene o por defecto 10
     const shippingCost = typeof order.shippingCost === 'number' ? order.shippingCost : 10;
-    // Total
     const total = subtotal + shippingCost;
-    // Asignar a la orden
     order.subtotal = subtotal;
     order.shippingCost = shippingCost;
     order.total = total;
@@ -39,27 +47,15 @@ export class OrdersService {
     // Enviar plantilla de confirmación de compra (WhatsApp template)
     try {
       if (savedOrder.user?.phone && savedOrder.user?.name && savedOrder.orderId) {
-        console.log('[WHATSAPP] Enviando plantilla de confirmación con:', {
-          phone: savedOrder.user.phone,
-          nombre: savedOrder.user.name,
-          orderId: savedOrder.orderId
-        });
         await this.sendOrderConfirmationTemplate(
           this.formatPhoneNumber(savedOrder.user.phone),
           savedOrder.user.name,
           savedOrder.orderId
         );
-      } else {
-        console.log('[WHATSAPP] Faltan datos para enviar plantilla:', {
-          phone: savedOrder.user?.phone,
-          nombre: savedOrder.user?.name,
-          orderId: savedOrder.orderId
-        });
       }
     } catch (err) {
       console.error('[WHATSAPP] Error enviando plantilla de confirmación:', err);
     }
-    
     return savedOrder;
   }
 
@@ -129,9 +125,6 @@ export class OrdersService {
       const errorBody = await response.text();
       console.error('[WhatsAppAPI] Error al enviar plantilla:', errorBody);
       throw new Error(`WhatsApp API error: ${response.statusText} - ${errorBody}`);
-    } else {
-      const successBody = await response.text();
-      console.log('[WhatsAppAPI] Plantilla enviada correctamente. Respuesta:', successBody);
     }
   }
 

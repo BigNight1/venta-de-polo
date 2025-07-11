@@ -37,35 +37,6 @@ export class OrdersController {
     return this.ordersService.findByFirebaseUid(uid);
   }
 
-  // Endpoint para probar WhatsApp (solo en desarrollo)
-  @Post('test-whatsapp')
-  async testWhatsApp(@Body() body: { phone: string; message?: string }) {
-    console.log('POST /orders/test-whatsapp', body);
-    if (process.env.NODE_ENV === 'production') {
-      console.log('Intento de uso en producción, bloqueado');
-      return { error: 'Este endpoint solo está disponible en desarrollo' };
-    }
-
-    const testMessage = body.message || `🧪 *Mensaje de prueba*
-
-Este es un mensaje de prueba para verificar que WhatsApp está funcionando correctamente.
-
-📱 Número: ${body.phone}
-⏰ Fecha: ${new Date().toLocaleString('es-PE')}
-
-¡Si recibes este mensaje, la configuración está correcta!`;
-
-    try {
-      console.log('Llamando a sendWhatsAppMessage con:', body.phone, testMessage);
-      // Usar el método privado a través de una función pública temporal
-      await (this.ordersService as any).sendWhatsAppMessage(body.phone, testMessage);
-      console.log('sendWhatsAppMessage ejecutado correctamente');
-      return { success: true, message: 'Mensaje de prueba enviado' };
-    } catch (error) {
-      console.error('Error en testWhatsApp:', error);
-      return { error: error.message };
-    }
-  }
 
   // Endpoint para probar la plantilla de confirmación de compra
   @Post('test-whatsapp-template')
@@ -79,11 +50,7 @@ Este es un mensaje de prueba para verificar que WhatsApp está funcionando corre
 
     try {
       // Formatear el número de teléfono
-      const formattedPhone = this.ordersService.formatPhoneNumber(body.phone);
-      
-      console.log('Enviando plantilla de confirmación a:', formattedPhone);
-      console.log('Nombre:', body.nombre);
-      console.log('Order ID:', body.orderId);
+      const formattedPhone = this.ordersService.formatPhoneNumber(body.phone);     
       
       await this.ordersService.sendOrderConfirmationTemplate(formattedPhone, body.nombre, body.orderId);
       

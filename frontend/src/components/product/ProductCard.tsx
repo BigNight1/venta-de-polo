@@ -4,22 +4,12 @@ import type { Product } from '../../types';
 import { useStore } from '../../store/useStore';
 import { formatPrice } from '../../lib/utils';
 import { Button } from '../ui/Button';
+import { COLOR_MAP } from '../../lib/colors';
+import { StarRating } from '../../lib/StarRating';
 
 interface ProductCardProps {
   product: Product;
 }
-
-// Mapa de colores estándar
-const COLOR_MAP: Record<string, string> = {
-  'BLANCO': '#FFFFFF',
-  'NEGRO': '#000000',
-  'ROJO': '#DC2626',
-  'AZUL': '#2563EB',
-  'VERDE': '#16A34A',
-  'ROSA': '#EC4899',
-  'AMARILLO': '#EAB308',
-  'MORADO': '#9333EA',
-};
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { setSelectedProduct, addToCart } = useStore();
@@ -53,10 +43,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <img
           src={(product.images?.[0]?.url || '')}
           alt={product.name}
-          className="w-full h-full object-cover transform transition-transform duration-200 ease-out group-hover:scale-105"
+          className="w-full h-full object-contain transform transition-transform duration-200 ease-out group-hover:scale-105"
           loading="lazy"
         />
-        
         {/* Overlay Actions - Optimizado sin retraso */}
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
           <div className="flex space-x-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
@@ -99,6 +88,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           {product.name}
         </h3>
         
+        {/* Stars and reviews */}
+        <div className="flex items-center space-x-2 mb-2">
+          <StarRating rating={typeof product.averageRating === 'number' ? product.averageRating : 0} />
+          <span className="text-sm text-gray-500">
+            ({typeof product.reviewCount === 'number' ? product.reviewCount : 0} reseñas)
+          </span>
+        </div>
+
         <p className="text-sm text-gray-600 mb-3 line-clamp-2">
           {product.description}
         </p>
