@@ -34,6 +34,11 @@ export const IzipayCheckout: React.FC<IzipayCheckoutProps> = ({
       if (window.KR && window.KR.removeForms) {
         try { await window.KR.removeForms(); } catch {}
       }
+      // Limpia el contenedor del widget
+      const smartFormDiv = document.querySelector('.kr-smart-form');
+      if (smartFormDiv) {
+        smartFormDiv.innerHTML = '';
+      }
     };
     removeForms();
 

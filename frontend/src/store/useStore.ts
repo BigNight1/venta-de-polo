@@ -104,7 +104,12 @@ export const useStore = create<StoreState>()(
         set({ cartItems: updatedCart });
       },
 
-      clearCart: () => set({ cartItems: [] }),
+      clearCart: () => {
+        set({ cartItems: [] });
+        try {
+          localStorage.setItem('polo-store', JSON.stringify({ cartItems: [], user: get().user }));
+        } catch (e) {}
+      },
 
       getCartTotal: () => {
         return get().cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
