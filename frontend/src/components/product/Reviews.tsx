@@ -107,7 +107,7 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId, initialReviews = []
       {/* Add Review Button */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Reseñas de clientes</h3>
-        {user && (
+        {user ? (
           <button
             onClick={() => setShowForm(!showForm)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
@@ -115,6 +115,10 @@ export const Reviews: React.FC<ReviewsProps> = ({ productId, initialReviews = []
             <ThumbsUp className="h-4 w-4" />
             <span>Escribir reseña</span>
           </button>
+        ) : (
+          <div className="text-gray-500 text-sm ml-2">
+            <b>Inicia sesión para dejar un comentario.</b>
+          </div>
         )}
       </div>
 
