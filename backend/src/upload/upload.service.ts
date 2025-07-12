@@ -50,7 +50,6 @@ export class UploadService {
             const filePath = path.join(uploadsDir, file);
             await fs.remove(filePath);
             deleted.push(file);
-            console.log(`Archivo huérfano eliminado: ${file}`);
           } catch (error) {
             errors.push(`Error eliminando ${file}: ${error.message}`);
           }

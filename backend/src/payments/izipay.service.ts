@@ -60,7 +60,6 @@ export class IzipayService {
   }
 
   async createFormToken(paymentData: IzipayPaymentData): Promise<IzipayFormTokenResponse> {
-    console.log('[IZIPAY][createFormToken] paymentData:', paymentData);
     // Forzar country a 'PE' y currency a 'PEN'
     const countryCode = 'PE';
     const currency = paymentData.currency && paymentData.currency.trim() ? paymentData.currency : 'PEN';
@@ -142,7 +141,6 @@ export class IzipayService {
         },
         firebaseUser: paymentData.firebaseUser || undefined,
       });
-      console.log('[IZIPAY][createFormToken] orderItemsMap:', this.orderItemsMap.get(paymentData.orderId));
     }
 
     return {
@@ -176,7 +174,6 @@ export class IzipayService {
       // Recuperar los datos guardados temporalmente
       const mapData = orderId ? this.orderItemsMap.get(orderId) : undefined;
       extraData = (mapData && typeof mapData === 'object' && !Array.isArray(mapData)) ? mapData : { items: [], shipping: {}, user: {} };
-      console.log('[IZIPAY][validatePayment] Recuperado de orderItemsMap:', extraData);
       // Eliminar del map para liberar memoria
       if (orderId) this.orderItemsMap.delete(orderId);
       const order: Partial<Order> = {
@@ -193,7 +190,6 @@ export class IzipayService {
         estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
         firebaseUser: extraData.firebaseUser || undefined,
       };
-      console.log('[IZIPAY][validatePayment] Orden a crear:', order);
       await this.ordersService.create(order);
       // Descontar stock
       for (const item of extraData.items || []) {

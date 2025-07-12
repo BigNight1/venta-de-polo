@@ -78,11 +78,9 @@ export class UsersService {
 
     // Verificar si ya existe el admin
     const existingAdmin = await this.findOne(adminData.username);
-    console.log('¿Ya existe admin?', existingAdmin);
     if (existingAdmin) {
       return existingAdmin;
     }
-    console.log('Creando admin:', adminData);
     return this.create(adminData);
   }
 } 

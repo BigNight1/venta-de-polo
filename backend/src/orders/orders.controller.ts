@@ -41,10 +41,7 @@ export class OrdersController {
   // Endpoint para probar la plantilla de confirmación de compra
   @Post('test-whatsapp-template')
   async testWhatsAppTemplate(@Body() body: { phone: string; nombre: string; orderId: string }) {
-    console.log('POST /orders/test-whatsapp-template', body);
-    
     if (process.env.NODE_ENV === 'production') {
-      console.log('Intento de uso en producción, bloqueado');
       return { error: 'Este endpoint solo está disponible en desarrollo' };
     }
 

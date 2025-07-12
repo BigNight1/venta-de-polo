@@ -13,7 +13,7 @@ export class AuthService {
   async validateUser(identifier: string, pass: string): Promise<any> {
     const user = await this.usersService.findOne(identifier);
     if (!user) {
-      console.log('Usuario no encontrado');
+      // console.log('Usuario no encontrado');
     } else {
       const match = await bcrypt.compare(pass, user.password);
     }
